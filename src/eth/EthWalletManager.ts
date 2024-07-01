@@ -16,6 +16,7 @@ import { sleepPromise, timeoutPromise } from '../utils/PromiseUtils.js';
 import { EthClaimInfo } from './EthClaimManager.js';
 import { Erc20Abi } from '../abi/ERC20.js';
 import IpcProvider from 'web3-providers-ipc';
+import {KMSSigner} from "@bobanetwork/aws-kms";
 
 export interface WalletState {
   ready: boolean;
@@ -442,7 +443,7 @@ export class EthWalletManager {
       if (this.walletKey) {
           tx = tx.sign(this.walletKey);
       } else {
-          tx = await this.awsKms.getSignedKmsTx(tx, !faucetConfig.ethLegacyTx)
+          tx = (await this.awsKms.getSignedKmsTx(Number(this.chainCommon.chainId()), tx as any, !faucetConfig.ethLegacyTx)) as any
       }
     return Buffer.from(tx.serialize()).toString('hex');
   }
