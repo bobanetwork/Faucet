@@ -630,13 +630,13 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bobanetwork/aws-kms@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@bobanetwork/aws-kms/-/aws-kms-1.1.0.tgz#8be8778aa6479f1bac03cdb34eb5f72d991a5a26"
-  integrity sha512-FNLt5GDO6ZoDwZZvEigQApzN0P9Kx7v6iImmtLw3L1pIzdgSCAzt7Oc0ri0UOfQXiFMuybIXyOifDO0Vdt9gPg==
+"@bobanetwork/aws-kms@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@bobanetwork/aws-kms/-/aws-kms-1.1.1.tgz#b674964a39dcc20ccfbde9c5cf54382fc7ed9222"
+  integrity sha512-748XWaJn2KOjtPZUzTC/ABRAutPXg4uUN7eSG+/v4rk1GCoejlASMqjE3H/qag4Prn44Cu969wqHmNiTbiwG9g==
   dependencies:
     "@aws-sdk/client-kms" "3.363.0"
-    "@bobanetwork/light-bridge-chains" "1.1.2"
+    "@bobanetwork/light-bridge-chains" "1.1.3"
     "@ethereumjs/common" "3.2.0"
     "@ethereumjs/tx" "4.2.0"
     "@ethersproject/keccak256" "5.7.0"
@@ -649,10 +649,10 @@
     node-fetch "^2.6.1"
     ts-jest "^29.1.2"
 
-"@bobanetwork/light-bridge-chains@1.1.2":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@bobanetwork/light-bridge-chains/-/light-bridge-chains-1.1.2.tgz#1a1423c5fa84b81b480d082cbbd3601aa5ad5e6b"
-  integrity sha512-0KhoHJhAcYPOutGJjE+wRv/ifHA5eakPbzar1q9BORv6g2nmKEjFe67VY6h27cuVe+1rV+BajxyzhaGBoiWpAA==
+"@bobanetwork/light-bridge-chains@1.1.3":
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/@bobanetwork/light-bridge-chains/-/light-bridge-chains-1.1.3.tgz#cef27cf873d4278d15f85fc589ece499d5c1c4ac"
+  integrity sha512-vbsdnj9n1HwVdA3VoQB0YcUK9zYJIaaNBh5tPJG/oY2aY1AqOzqFtWel9ZPcrKrNxDtZRcGyz+nJvR+9DO/J/g==
   dependencies:
     dotenv "^8.6.0"
     ethers "^5.5.4"

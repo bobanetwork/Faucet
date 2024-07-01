@@ -62,6 +62,7 @@ ethRpcHost: "https://replica.goerli.boba.network"
 # Alternatively to providing the ethWalletKey we can use awsKMS
 awsKmsAccessKey: ""
 awsKmsSecretKey: ""
+awsKmsSessionToken: ""
 awsKmsKeyId: ""
 awsKmsEndpoint: ""
 awsKmsRegion: ""

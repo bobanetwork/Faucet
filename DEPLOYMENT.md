@@ -46,6 +46,7 @@ And then add the following configuration:
 # Alternatively to providing the ethWalletKey we can use awsKMS
 awsKmsAccessKey: ""
 awsKmsSecretKey: ""
+awsKmsSessionToken: ""
 awsKmsKeyId: ""
 awsKmsEndpoint: ""
 awsKmsRegion: ""

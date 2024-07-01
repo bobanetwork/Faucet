@@ -35,6 +35,7 @@ export interface IConfigSchema {
   // aws kms config alternatively to ethWalletKey
   awsKmsAccessKey?: string;
   awsKmsSecretKey?: string;
+  awsKmsSessionToken?: string;
   awsKmsKeyId?: string;
   awsKmsEndpoint?: string;
   awsKmsRegion?: string;

@@ -99,6 +99,7 @@ export class EthWalletManager {
       this.awsKms = new KMSSigner({
           awsKmsAccessKey: faucetConfig.awsKmsAccessKey,
           awsKmsSecretKey: faucetConfig.awsKmsSecretKey,
+          awsKmsSessionToken: faucetConfig.awsKmsSessionToken,
           awsKmsKeyId: faucetConfig.awsKmsKeyId,
           awsKmsEndpoint: faucetConfig.awsKmsEndpoint,
           awsKmsRegion: faucetConfig.awsKmsRegion,
