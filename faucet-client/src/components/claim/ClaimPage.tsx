@@ -43,7 +43,11 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
   constructor(props: IClaimPageProps, state: IClaimPageState) {
     super(props);
 
-    let claimWsEndpoint = "/ws/claim";
+    let claimWsEndpoint: string;
+    if(this.props.pageContext.faucetUrls.wsBaseUrl) 
+      claimWsEndpoint = this.props.pageContext.faucetUrls.wsBaseUrl + "/claim";
+    else
+      claimWsEndpoint = "/ws/claim";
     if(claimWsEndpoint.match(/^\//))
       claimWsEndpoint = location.origin.replace(/^http/, "ws") + claimWsEndpoint;
     this.notificationClient = new ClaimNotificationClient({
@@ -216,7 +220,7 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
       return (
         <div className="faucet-loading">
           <div className="loading-spinner">
-            <img src="/images/spinner.gif" className="spinner" />
+            <img src={(this.props.pageContext.faucetUrls.imagesUrl || "/images") + "/spinner.gif"} className="spinner" />
             <span className="spinner-text">Loading Claim...</span>
           </div>
         </div>
@@ -341,6 +345,7 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
               <div className='col'>
                 <OverlayTrigger
                   placement="auto"
+                  container={this.props.pageContext.getContainer()}
                   overlay={
                     <Tooltip>
                       {((this.state.sessionStatus.claimIdx || 0) - (this.state.claimNotification?.processedIdx || 0) - 1)} claims will be processed before yours.

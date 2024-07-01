@@ -1,20 +1,17 @@
-import { ServiceManager } from "../../common/ServiceManager";
-import { EthWalletManager } from "../../eth/EthWalletManager";
-import { FaucetSession, FaucetSessionStoreData } from "../../session/FaucetSession";
-import { BaseModule } from "../BaseModule";
-import { ModuleHookAction } from "../ModuleManager";
-import { defaultConfig, IConcurrencyLimitConfig } from './ConcurrencyLimitConfig';
-import { FaucetError } from '../../common/FaucetError';
-import { FaucetDatabase } from "../../db/FaucetDatabase";
-import { renderTimespan } from "../../utils/DateUtils";
-import { SessionManager } from "../../session/SessionManager";
+import { ServiceManager } from "../../common/ServiceManager.js";
+import { FaucetSession } from "../../session/FaucetSession.js";
+import { BaseModule } from "../BaseModule.js";
+import { ModuleHookAction } from "../ModuleManager.js";
+import { defaultConfig, IConcurrencyLimitConfig } from './ConcurrencyLimitConfig.js';
+import { FaucetError } from '../../common/FaucetError.js';
+import { SessionManager } from "../../session/SessionManager.js";
 
 export class ConcurrencyLimitModule extends BaseModule<IConcurrencyLimitConfig> {
   protected readonly moduleDefaultConfig = defaultConfig;
 
   protected override startModule(): Promise<void> {
     this.moduleManager.addActionHook(
-      this, ModuleHookAction.SessionStart, 6, "Recurring limits check", 
+      this, ModuleHookAction.SessionStart, 7, "Recurring limits check", 
       (session: FaucetSession) => this.processSessionStart(session)
     );
     this.moduleManager.addActionHook(

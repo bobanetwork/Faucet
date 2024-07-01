@@ -1,6 +1,6 @@
-import mysql from "mysql";
-import { FaucetDbDriver } from "../FaucetDatabase";
-import { BaseDriver, BindValues, QueryResult, RunResult } from "./BaseDriver";
+import mysql, { ResultSetHeader } from "mysql2";
+import { FaucetDbDriver } from "../FaucetDatabase.js";
+import { BaseDriver, BindValues, QueryResult, RunResult } from "./BaseDriver.js";
 
 export interface IMySQLOptions {
   driver: FaucetDbDriver.MYSQL;
@@ -34,11 +34,11 @@ export class MySQLDriver extends BaseDriver<IMySQLOptions> {
     return new Promise((resolve, reject) => {
       this.pool.getConnection((err, connection) => {
         if(err)
-          return reject("sqlite exec() error: could not aquire connection: " + err.toString());
+          return reject("mysql exec() error: could not acquire connection: " + err.toString());
         
         connection.query(sql, (error, results) => {
           if(error)
-            reject("sqlite exec() error [" + sql + "]: " + error.toString());
+            reject("mysql exec() error [" + sql + "]: " + error.toString());
           else
             resolve();
           connection.release();
@@ -51,15 +51,15 @@ export class MySQLDriver extends BaseDriver<IMySQLOptions> {
     return new Promise((resolve, reject) => {
       this.pool.getConnection((err, connection) => {
         if(err)
-          return reject("sqlite run() error: could not aquire connection: " + err.toString());
+          return reject("mysql run() error: could not acquire connection: " + err.toString());
         
         connection.query(sql, values, (error, results) => {
           if(error)
-            reject("sqlite run() error [" + sql + "]: " + error.toString());
+            reject("mysql run() error [" + sql + "]: " + error.toString());
           else {
             resolve({
-              changes: results.affectedRows,
-              lastInsertRowid: results.insertId,
+              changes: (results as ResultSetHeader).affectedRows,
+              lastInsertRowid: (results as ResultSetHeader).insertId,
             });
           }
           connection.release();
@@ -72,13 +72,13 @@ export class MySQLDriver extends BaseDriver<IMySQLOptions> {
     return new Promise((resolve, reject) => {
       this.pool.getConnection((err, connection) => {
         if(err)
-          return reject("sqlite all() error: could not aquire connection: " + err.toString());
+          return reject("mysql all() error: could not acquire connection: " + err.toString());
         
         connection.query(sql, values, (error, results) => {
           if(error)
-            reject("sqlite all() error [" + sql + "]: " + error.toString());
+            reject("mysql all() error [" + sql + "]: " + error.toString());
           else {
-            resolve(results);
+            resolve(results as QueryResult[]);
           }
           connection.release();
         })
@@ -90,13 +90,13 @@ export class MySQLDriver extends BaseDriver<IMySQLOptions> {
     return new Promise((resolve, reject) => {
       this.pool.getConnection((err, connection) => {
         if(err)
-          return reject("sqlite get() error: could not aquire connection: " + err.toString());
+          return reject("mysql get() error: could not acquire connection: " + err.toString());
         
         connection.query(sql, values, (error, results) => {
           if(error)
-            reject("sqlite get() error [" + sql + "]: " + error.toString());
+            reject("mysql get() error [" + sql + "]: " + error.toString());
           else {
-            resolve(results.length > 0 ? results[0] : null);
+            resolve((results as QueryResult[]).length > 0 ? results[0] : null);
           }
           connection.release();
         })

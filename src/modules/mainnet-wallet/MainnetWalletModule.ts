@@ -1,11 +1,12 @@
 import Web3 from 'web3';
-import { ServiceManager } from "../../common/ServiceManager";
-import { EthWalletManager } from "../../eth/EthWalletManager";
-import { FaucetSession } from "../../session/FaucetSession";
-import { BaseModule } from "../BaseModule";
-import { ModuleHookAction } from "../ModuleManager";
-import { defaultConfig, IMainnetWalletConfig } from './MainnetWalletConfig';
-import { FaucetError } from '../../common/FaucetError';
+import { ServiceManager } from "../../common/ServiceManager.js";
+import { EthWalletManager } from "../../eth/EthWalletManager.js";
+import { FaucetSession } from "../../session/FaucetSession.js";
+import { BaseModule } from "../BaseModule.js";
+import { ModuleHookAction } from "../ModuleManager.js";
+import { defaultConfig, IMainnetWalletConfig } from './MainnetWalletConfig.js';
+import { FaucetError } from '../../common/FaucetError.js';
+import { Erc20Abi } from '../../abi/ERC20.js';
 
 export class MainnetWalletModule extends BaseModule<IMainnetWalletConfig> {
   protected readonly moduleDefaultConfig = defaultConfig;
@@ -13,7 +14,7 @@ export class MainnetWalletModule extends BaseModule<IMainnetWalletConfig> {
 
   protected override startModule(): Promise<void> {
     this.startWeb3();
-    this.moduleManager.addActionHook(this, ModuleHookAction.SessionStart, 6, "Mainnet Wallet check", (session: FaucetSession, userInput: any) => this.processSessionStart(session, userInput));
+    this.moduleManager.addActionHook(this, ModuleHookAction.SessionStart, 7, "Mainnet Wallet check", (session: FaucetSession, userInput: any) => this.processSessionStart(session, userInput));
     return Promise.resolve();
   }
 
@@ -44,7 +45,7 @@ export class MainnetWalletModule extends BaseModule<IMainnetWalletConfig> {
     }
 
     if(this.moduleConfig.minTxCount > 0) {
-      let walletTxCount: number;
+      let walletTxCount: bigint;
       try {
         walletTxCount = await this.web3.eth.getTransactionCount(targetAddr);
       } catch(ex) {
@@ -54,7 +55,29 @@ export class MainnetWalletModule extends BaseModule<IMainnetWalletConfig> {
         throw new FaucetError("MAINNET_TXCOUNT_LIMIT", "You need to submit at least " + this.moduleConfig.minTxCount + " transactions from your wallet on mainnet to use this faucet.");
     }
 
-    
+    if(this.moduleConfig.minErc20Balances.length > 0) {
+      let faucetAddress = ServiceManager.GetService(EthWalletManager).getFaucetAddress();
+      for(let i = 0; i < this.moduleConfig.minErc20Balances.length; i++) {
+        let erc20Token = this.moduleConfig.minErc20Balances[i];
+        let minBalance = BigInt(erc20Token.minBalance);
+
+        let walletBalance: bigint;
+        try {
+          let tokenContract = new this.web3.eth.Contract(Erc20Abi, erc20Token.address, {
+            from: faucetAddress,
+          });
+
+          walletBalance = BigInt(await tokenContract.methods.balanceOf(targetAddr).call());
+        } catch(ex) {
+          throw new FaucetError("MAINNET_BALANCE_CHECK", "Could not get token balance of mainnet wallet " + targetAddr + ": " + ex.toString());
+        }
+        if(walletBalance < minBalance) {
+          let factor = Math.pow(10, erc20Token.decimals || 18);
+          let amountStr = (Math.floor(parseInt(minBalance.toString()) / factor * 1000) / 1000).toString();
+          throw new FaucetError("MAINNET_BALANCE_LIMIT", "You need to hold at least " + amountStr + " " + erc20Token.name + " in your wallet on mainnet to use this faucet.");
+        }
+      }
+    }
   }
 
 }

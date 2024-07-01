@@ -1,7 +1,7 @@
-import { FaucetDbDriver } from "../db/FaucetDatabase";
-import { FaucetCoinType } from "../eth/EthWalletManager";
-import { IConfigSchema } from "./ConfigSchema";
-import { resolveRelativePath } from "./FaucetConfig";
+import { FaucetDbDriver } from "../db/FaucetDatabase.js";
+import { FaucetCoinType } from "../eth/EthWalletManager.js";
+import { IConfigSchema } from "./ConfigSchema.js";
+import { resolveRelativePath } from "./FaucetConfig.js";
 
 export function getDefaultConfig(): IConfigSchema {
   return {
@@ -58,10 +58,12 @@ export function getDefaultConfig(): IConfigSchema {
     noFundsError: true,
     rpcConnectionError: true,
     denyNewSessions: false,
+    corsAllowOrigin: [],
     ethRefillContract: null,
     faucetStats: null,
     faucetStatus: {
       json: "faucet-status.json",
+      yaml: "faucet-status.yaml",
     },
     resultSharing: {
       preHtml: '<div class="sh-opt">Do you like the faucet? Give that project a <iframe src="https://ghbtns.com/github-btn.html?user=bobanetwork&repo=Faucet&type=star&count=true" frameborder="0" scrolling="0" width="150" height="20" title="GitHub"></iframe></div>',

@@ -9,7 +9,7 @@ on:
         required: true
         description: Which faucet config to use?
         options:
-          - BOBAGOERLI_FAUCET_CONFIG
+          - BOBASEPOLIA_FAUCET_CONFIG
           - BOBABNBTESTNET_FAUCET_CONFIG
           - BOBABNB_FAUCET_CONFIG
           - BOBAETH_FAUCET_CONFIG
@@ -18,7 +18,7 @@ on:
         required: true
         description: Which network to tag the build for? (99% of the time this equals the faucetConfig)
         options:
-          - bobagoerli
+          - bobasepolia
           - bobabnbtestnet
           - bobabnb
           - bobaeth
@@ -30,9 +30,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
     - uses: actions/setup-node@v3
       with:
-        node-version: 18.15.0
+        node-version: 21
 
     - run: npm install
     - run: npm run test
@@ -47,7 +49,8 @@ jobs:
     # setup global dependencies
     - uses: actions/setup-node@v3
       with:
-        node-version: 18.15.0
+        node-version: 21
+        registry-url: "https://registry.npmjs.org"
     - run: npm install -g pkg
 
     # build server project
@@ -61,21 +64,22 @@ jobs:
         npm install
         node ./build-client.js 
 
-    # override faucet config
-    - name: Use correct faucet config
-      shell: bash
-      run: |
-        python -c "import os; file = open('faucet-config.yaml', 'w'); file.write(os.environ['FAUCET_CONFIG']); file.close()"
+    # publish npm packages
+    - run: |
+        npm set "//registry.npmjs.org/:_authToken=$NPM_TOKEN"
+        npm publish --access public || true
+        cd faucet-client
+        npm publish --access public || true
       env:
-        FAUCET_CONFIG: ${{ secrets[inputs.faucetConfig] }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     # package bundled release
     - name: Package bundled release
       run: |
         mv res/run-faucet.* ./
         chmod +x ./run-faucet.sh
-        tar cfz powfaucet-server-all.tar.gz dist static faucet-config.yaml run-faucet.sh
-        zip -r powfaucet-server-all.zip dist static faucet-config.yaml run-faucet.bat
+        tar cfz powfaucet-server-all.tar.gz bundle static faucet-config.example.yaml run-faucet.sh
+        zip -r powfaucet-server-all.zip bundle static faucet-config.example.yaml run-faucet.bat
     
     # package static folder
     - name: Package static folder
@@ -121,7 +125,7 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/pow-faucet-server-linux
+        asset_path: ./bin/server-linux
         asset_name: powfaucet-server-linux
         asset_content_type: application/octet-stream
       env:
@@ -130,7 +134,7 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/pow-faucet-server-win.exe
+        asset_path: ./bin/server-win.exe
         asset_name: powfaucet-server-win.exe
         asset_content_type: application/octet-stream
       env:

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import { HashRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 import { FaucetApi } from '../common/FaucetApi';
 import { IFaucetConfig, IFaucetStatus } from '../common/FaucetConfig';
-import { IFaucetContext } from '../common/FaucetContext';
+import { IFaucetContext, IFaucetContextUrls } from '../common/FaucetContext';
 import { FaucetNotification } from './shared/FaucetNotification';
 import { FaucetDialog, IFaucetDialogProps } from './shared/FaucetDialog';
 
@@ -14,11 +14,21 @@ import DetailsPage from './details/DetailsPage';
 import FaucetStatusPage from './status/FaucetStatusPage';
 import QueueStatusPage from './status/QueueStatusPage';
 
-import './FaucetPage.css'
 import {Badge} from "react-bootstrap";
+import './FaucetPage.scss'
+import { PoWMinerWorkerSrc, getPoWMinerDefaultSrc } from '../types/PoWMinerSrc';
+import path from 'path';
+import { URL } from 'url';
+import { joinUrl } from '../utils/QueryUtils';
 
 export interface IFaucetPageProps {
-  apiUrl: string;
+  baseUrl?: string; // base url (default: "/")
+  apiUrl?: string;  // api url  (default: "{baseUrl}/api")
+  wsBaseUrl?: string; // ws url (default: "{baseUrl}/ws")
+  imagesUrl?: string; // images (default: "{baseUrl}/images")
+  minerSrc?: PoWMinerWorkerSrc;
+  children?: ReactElement | ReactElement[];
+  ref?: (ref: FaucetPage) => void;
 }
 
 export interface IFaucetPageState {
@@ -57,6 +67,7 @@ export const FaucetConfigContext = React.createContext<IFaucetConfig>(null);
 
 export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPageState> {
   private configRefreshInterval: NodeJS.Timer;
+  private faucetContainerElement: HTMLElement;
   private lastConfigRefresh = 0;
   private statusAlertIdCounter = 0;
   private notificationIdCounter = 0;
@@ -70,8 +81,16 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
   constructor(props: IFaucetPageProps, state: IFaucetPageState) {
     super(props);
 
-    let faucetApi = new FaucetApi(props.apiUrl);
+    let baseUrl = props.baseUrl || "/";
+    let faucetApi = new FaucetApi(props.apiUrl || joinUrl(baseUrl, "/api"));
     this.pageContext = {
+      faucetUrls: {
+        baseUrl: baseUrl,
+        apiUrl: props.apiUrl || joinUrl(baseUrl, "/api"),
+        wsBaseUrl: props.wsBaseUrl || joinUrl(baseUrl.replace(/^http/, "ws"), "/ws"),
+        minerSrc: props.minerSrc || getPoWMinerDefaultSrc(baseUrl),
+        imagesUrl: props.imagesUrl || joinUrl(baseUrl, "/images"),
+      },
       faucetApi: faucetApi,
       showStatusAlert: (level: string, prio: number, body: React.ReactElement) => this.showStatusAlert(level, prio, body),
       hideStatusAlert: (statusAlertId: number) => this.hideStatusAlert(statusAlertId),
@@ -79,6 +98,7 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
       hideNotification: (notificationId: number) => this.hideNotification(notificationId),
       showDialog: (dialogProps: IFaucetDialogProps) => this.showDialog(dialogProps),
       hideDialog: (dialogId: number) => this.hideDialog(dialogId),
+      getContainer: () => this.faucetContainerElement,
     };
 
     this.state = {
@@ -89,6 +109,10 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
       dialogs: [],
       notifications: [],
 		};
+
+    if(props.ref) {
+      props.ref(this);
+    }
   }
 
   public componentDidMount() {
@@ -130,14 +154,16 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
       return (
         <div className="faucet-loading">
           <div className="loading-spinner">
-            <img src="/images/spinner.gif" className="spinner" />
+            <img src={(this.pageContext.faucetUrls.imagesUrl || "/images") + "/spinner.gif"} className="spinner" />
             <span className="spinner-text">Loading...</span>
           </div>
         </div>
       );
     }
     return (
-      <div className='faucet-page'>
+      <div className='faucet-page' ref={(ref) => {
+        this.faucetContainerElement = ref;
+      }}>
         <FaucetConfigContext.Provider value={this.state.faucetConfig}>
           <FaucetPageContext.Provider value={this.pageContext}>
             <div className="faucet-title">
@@ -153,6 +179,7 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
             </div>
             {this.renderStatusAlerts()}
             <div className="faucet-body">
+              {this.props.children && (!Array.isArray(this.props.children) || this.props.children.length > 0) ? this.props.children :
               <Router>
                 <Routes>
                   <Route
@@ -193,6 +220,7 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
                   />
                 </Routes>
               </Router>
+              }
             </div>
             {this.renderDialogs()}
             {this.renderNotifications()}
@@ -347,6 +375,7 @@ export class FaucetPage extends React.PureComponent<IFaucetPageProps, IFaucetPag
       <FaucetDialog 
         key={dialog.id} 
         {...dialog.dialog}
+        container={this.faucetContainerElement}
       />
     ));
   }

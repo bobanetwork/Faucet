@@ -1,11 +1,10 @@
 
-import { IBaseModuleConfig } from '../modules/BaseModule';
-import { FaucetCoinType } from '../eth/EthWalletManager';
-import { IFaucetStatsConfig } from '../services/FaucetStatsLog';
-import { IFaucetResultSharingConfig } from './ConfigShared';
-import { FaucetDatabaseOptions } from '../db/FaucetDatabase';
-import { IFaucetStatusConfig } from '../services/FaucetStatus';
-import {IKMSSignerConfig} from "../eth/AwsKmsManager";
+import { IBaseModuleConfig } from '../modules/BaseModule.js';
+import { FaucetCoinType } from '../eth/EthWalletManager.js';
+import { IFaucetStatsConfig } from '../services/FaucetStatsLog.js';
+import { IFaucetResultSharingConfig } from './ConfigShared.js';
+import { FaucetDatabaseOptions } from '../db/FaucetDatabase.js';
+import { IFaucetStatusConfig } from '../services/FaucetStatus.js';
 
 export interface IConfigSchema {
   version?: 2;
@@ -68,6 +67,8 @@ export interface IConfigSchema {
   noFundsError: string | boolean; // empty faucet error message / true to show the generic message / false to disable the error
   rpcConnectionError: string | boolean; // RPC unreachable error message / true to show the generic message / false to disable the error
   denyNewSessions: string | boolean; // prevent creation of new sessions (used for maintenance)
+
+  corsAllowOrigin: string[]; // Access-Control-Allow-Origin header, empty to disable cors
 
   ethRefillContract: null | { // refill from vault contract or null to disable automatic refilling
     contract: string; // vault contract address

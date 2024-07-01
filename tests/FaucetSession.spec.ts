@@ -1,14 +1,16 @@
 import 'mocha';
 import sinon from 'sinon';
+import path from 'path';
+import os from 'os';
 import { expect } from 'chai';
-import { bindTestStubs, unbindTestStubs, loadDefaultTestConfig, awaitSleepPromise } from './common';
-import { ServiceManager } from '../src/common/ServiceManager';
-import { FaucetDatabase } from '../src/db/FaucetDatabase';
-import { ModuleHookAction, ModuleManager } from '../src/modules/ModuleManager';
-import { SessionManager } from '../src/session/SessionManager';
-import { faucetConfig } from '../src/config/FaucetConfig';
-import { FaucetError } from '../src/common/FaucetError';
-import { FaucetSession, FaucetSessionStatus } from '../src/session/FaucetSession';
+import { bindTestStubs, unbindTestStubs, loadDefaultTestConfig, awaitSleepPromise } from './common.js';
+import { ServiceManager } from '../src/common/ServiceManager.js';
+import { FaucetDatabase, FaucetDbDriver } from '../src/db/FaucetDatabase.js';
+import { ModuleHookAction, ModuleManager } from '../src/modules/ModuleManager.js';
+import { SessionManager } from '../src/session/SessionManager.js';
+import { faucetConfig } from '../src/config/FaucetConfig.js';
+import { FaucetError } from '../src/common/FaucetError.js';
+import { FaucetSession, FaucetSessionStatus } from '../src/session/FaucetSession.js';
 
 
 describe("Faucet Session Management", () => {
@@ -17,12 +19,17 @@ describe("Faucet Session Management", () => {
   beforeEach(async () => {
     globalStubs = bindTestStubs();
     loadDefaultTestConfig();
+    faucetConfig.database = {
+      driver: FaucetDbDriver.SQLITE,
+      file: path.join(os.tmpdir(), "powfaucet-test.sqlite"),
+    };
     await ServiceManager.GetService(FaucetDatabase).initialize();
     await ServiceManager.GetService(ModuleManager).initialize();
   });
   afterEach(async () => {
     let dbService = ServiceManager.GetService(FaucetDatabase);
     await ServiceManager.DisposeAllServices();
+    await dbService.dropAllTables();
     await dbService.closeDatabase();
     await unbindTestStubs(globalStubs);
   });
@@ -42,24 +49,24 @@ describe("Faucet Session Management", () => {
 
   it("Create invalid session (missing addr)", async () => {
     let sessionManager = ServiceManager.GetService(SessionManager);
-    let error: FaucetError = null;
+    let error: FaucetError | null = null;
     try {
       await sessionManager.createSession("8.8.8.8", { });
     } catch(ex) { error = ex; }
     expect(error).to.not.equal(null, "no exception thrown");
     expect(error instanceof FaucetError).to.equal(true, "unexpected error type");
-    expect(error.getCode()).to.equal("INVALID_ADDR", "unexpected error code");
+    expect(error?.getCode()).to.equal("INVALID_ADDR", "unexpected error code");
   });
 
   it("Create invalid session (invalid addr)", async () => {
     let sessionManager = ServiceManager.GetService(SessionManager);
-    let error: FaucetError = null;
+    let error: FaucetError | null = null;
     try {
       await sessionManager.createSession("8.8.8.8", { addr: "not_a_eth_address" });
     } catch(ex) { error = ex; }
     expect(error).to.not.equal(null, "no exception thrown");
     expect(error instanceof FaucetError).to.equal(true, "unexpected error type");
-    expect(error.getCode()).to.equal("INVALID_ADDR", "unexpected error code");
+    expect(error?.getCode()).to.equal("INVALID_ADDR", "unexpected error code");
   });
 
   it("Create session with blocking task", async () => {
@@ -173,14 +180,14 @@ describe("Faucet Session Management", () => {
     expect(testSession).to.not.equal(null, "createSession failed");
     expect(testSession.getBlockingTasks().length).to.equal(2, "unexpected blockingTasks");
     expect(testSession.getSessionStatus()).to.equal(FaucetSessionStatus.RUNNING, "unexpected session status");
-    let error: FaucetError;
+    let error: FaucetError | null = null;
     try {
       testSession.setTargetAddr("0x0000000000000000000000000000000000001338");
     } catch(ex) {
       error = ex;
     }
     expect(error && error instanceof FaucetError).to.equal(true, "unexpected error type");
-    expect(error.getCode()).to.equal("INVALID_STATE", "unexpected error code");
+    expect(error?.getCode()).to.equal("INVALID_STATE", "unexpected error code");
     await testSession.updateRemoteIP("::ffff:8.8.8.8");
     expect(changeAddrCalled).to.equal(0, "SessionIpChange for non-changed ip");
     await testSession.updateRemoteIP("8.8.4.4");
@@ -219,9 +226,9 @@ describe("Faucet Session Management", () => {
     await testSession.subPenalty(1000n);
     expect(testSession.getDropAmount()).to.equal(50n, "unexpected drop amount after subPenalty on failed session");
     let sessionInfo = await testSession.getSessionInfo();
-    expect(sessionInfo.session).to.equal(testSession.getSessionId(), "invalid sessioninfo: id missmatch");
-    expect(sessionInfo.balance).to.equal(testSession.getDropAmount().toString(), "invalid sessioninfo: balance missmatch");
-    expect(sessionInfo.failedCode).to.equal("AMOUNT_TOO_LOW", "invalid sessioninfo: failedCode missmatch");
+    expect(sessionInfo.session).to.equal(testSession.getSessionId(), "invalid sessioninfo: id mismatch");
+    expect(sessionInfo.balance).to.equal(testSession.getDropAmount().toString(), "invalid sessioninfo: balance mismatch");
+    expect(sessionInfo.failedCode).to.equal("AMOUNT_TOO_LOW", "invalid sessioninfo: failedCode mismatch");
   });
 
   it("Check invalid balance change on failed session", async () => {

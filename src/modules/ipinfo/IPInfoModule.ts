@@ -1,17 +1,17 @@
 import * as fs from 'fs';
 import YAML from 'yaml'
-import { ServiceManager } from "../../common/ServiceManager";
-import { FaucetSession } from "../../session/FaucetSession";
-import { BaseModule } from "../BaseModule";
-import { ModuleHookAction } from "../ModuleManager";
-import { FaucetError } from '../../common/FaucetError';
-import { defaultConfig, IIPInfoConfig, IIPInfoRestrictionConfig } from "./IPInfoConfig";
-import { IIPInfo, IPInfoResolver } from "./IPInfoResolver";
-import { resolveRelativePath } from "../../config/FaucetConfig";
-import { ISessionRewardFactor } from '../../session/SessionRewardFactor';
-import { IPInfoDB } from './IPInfoDB';
-import { FaucetDatabase } from '../../db/FaucetDatabase';
-import { FaucetLogLevel, FaucetProcess } from '../../common/FaucetProcess';
+import { ServiceManager } from "../../common/ServiceManager.js";
+import { FaucetSession } from "../../session/FaucetSession.js";
+import { BaseModule } from "../BaseModule.js";
+import { ModuleHookAction } from "../ModuleManager.js";
+import { FaucetError } from '../../common/FaucetError.js';
+import { defaultConfig, IIPInfoConfig, IIPInfoRestrictionConfig } from "./IPInfoConfig.js";
+import { IIPInfo, IPInfoResolver } from "./IPInfoResolver.js";
+import { resolveRelativePath } from "../../config/FaucetConfig.js";
+import { ISessionRewardFactor } from '../../session/SessionRewardFactor.js';
+import { IPInfoDB } from './IPInfoDB.js';
+import { FaucetDatabase } from '../../db/FaucetDatabase.js';
+import { FaucetLogLevel, FaucetProcess } from '../../common/FaucetProcess.js';
 
 export interface IIPInfoRestriction {
   reward: number;
@@ -21,6 +21,8 @@ export interface IIPInfoRestriction {
     notify: boolean|string;
   }[];
   blocked: false|"close"|"kill";
+  hostingBased: boolean;
+  proxyBased: boolean;
 }
 
 export class IPInfoModule extends BaseModule<IIPInfoConfig> {
@@ -29,12 +31,13 @@ export class IPInfoModule extends BaseModule<IIPInfoConfig> {
   private ipInfoResolver: IPInfoResolver;
   private ipInfoMatchRestrictions: [pattern: string, restriction: number | IIPInfoRestrictionConfig][];
   private ipInfoMatchRestrictionsRefresh: number;
+  private sessionRewardFactorCacheTimeout: number = 30;
 
   protected override async startModule(): Promise<void> {
     this.ipInfoDb = await ServiceManager.GetService(FaucetDatabase).createModuleDb(IPInfoDB, this);
     this.ipInfoResolver = new IPInfoResolver(this.ipInfoDb, this.moduleConfig.apiUrl);
     this.moduleManager.addActionHook(
-      this, ModuleHookAction.SessionStart, 6, "IP Info check", 
+      this, ModuleHookAction.SessionStart, 7, "IP Info check", 
       (session: FaucetSession) => this.processSessionStart(session)
     );
     this.moduleManager.addActionHook(
@@ -49,6 +52,7 @@ export class IPInfoModule extends BaseModule<IIPInfoConfig> {
 
   protected override stopModule(): Promise<void> {
     this.ipInfoDb.dispose();
+    this.ipInfoResolver.dispose();
     return Promise.resolve();
   }
 
@@ -67,25 +71,45 @@ export class IPInfoModule extends BaseModule<IIPInfoConfig> {
       if(ipInfo.status !== "success" && this.moduleConfig.required)
         throw new FaucetError("INVALID_IPINFO", "Error while checking your IP: " + ipInfo.status);
     } catch(ex) {
+      ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.WARNING, "Error while fetching IP-Info for " + remoteIp + ": " + ex.toString());
       if(this.moduleConfig.required)
         throw new FaucetError("INVALID_IPINFO", "Error while checking your IP: " + ex.toString());
-      ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.WARNING, "Error while fetching IP-Info for " + remoteIp + ": " + ex.toString());
     }
+
+    let overrideHosting = session.getSessionData<boolean>("ipinfo.override_hosting", undefined);
+    if(overrideHosting !== undefined) {
+      ipInfo.hosting = overrideHosting;
+    }
+
+    let overrideProxy = session.getSessionData<boolean>("ipinfo.override_proxy", undefined);
+    if(overrideProxy !== undefined) {
+      ipInfo.proxy = overrideProxy;
+    }
+
     session.setSessionData("ipinfo.data", ipInfo);
 
     let sessionRestriction = this.getSessionRestriction(session);
     if(sessionRestriction.blocked) {
-      throw new FaucetError("IPINFO_RESTRICTION", "IP Blocked: " + sessionRestriction.messages.map((msg) => msg.text).join(", "));
+      let err = new FaucetError("IPINFO_RESTRICTION", "IP Blocked: " + sessionRestriction.messages.map((msg) => msg.text).join(", "));
+      if(sessionRestriction.hostingBased || sessionRestriction.proxyBased) {
+        err.data = { 
+          "address": session.getTargetAddr(),
+          "ipflags": [ sessionRestriction.hostingBased, sessionRestriction.proxyBased ],
+        };
+      }
+      throw err;
     }
     session.setSessionModuleRef("ipinfo.restriction.time", Math.floor((new Date()).getTime() / 1000));
     session.setSessionModuleRef("ipinfo.restriction.data", sessionRestriction);
   }
 
   private async processSessionRewardFactor(session: FaucetSession, rewardFactors: ISessionRewardFactor[]) {
+    if(session.getSessionData<Array<string>>("skip.modules", []).indexOf(this.moduleName) !== -1)
+      return;
     let refreshTime = session.getSessionModuleRef("ipinfo.restriction.time") || 0;
     let now = Math.floor((new Date()).getTime() / 1000);
     let sessionRestriction: IIPInfoRestriction;
-    if(now - refreshTime > 30) {
+    if(now - refreshTime > this.sessionRewardFactorCacheTimeout) {
       sessionRestriction = this.getSessionRestriction(session);
       session.setSessionModuleRef("ipinfo.restriction.time", Math.floor((new Date()).getTime() / 1000));
       session.setSessionModuleRef("ipinfo.restriction.data", sessionRestriction);
@@ -191,6 +215,8 @@ export class IPInfoModule extends BaseModule<IIPInfoConfig> {
       reward: 100,
       messages: [],
       blocked: false,
+      hostingBased: false,
+      proxyBased: false,
     };
     let msgKeyDict = {};
     let sessionIpInfo: IIPInfo = session.getSessionData("ipinfo.data");
@@ -219,10 +245,14 @@ export class IPInfoModule extends BaseModule<IIPInfoConfig> {
     };
 
     if(sessionIpInfo && this.moduleConfig.restrictions) {
-      if(sessionIpInfo.hosting && this.moduleConfig.restrictions.hosting)
+      if(sessionIpInfo.hosting && this.moduleConfig.restrictions.hosting) {
         applyRestriction(this.moduleConfig.restrictions.hosting);
-      if(sessionIpInfo.proxy && this.moduleConfig.restrictions.proxy)
+        restriction.hostingBased = true;
+      }
+      if(sessionIpInfo.proxy && this.moduleConfig.restrictions.proxy) {
         applyRestriction(this.moduleConfig.restrictions.proxy);
+        restriction.proxyBased = true;
+      }
       if(sessionIpInfo.countryCode && typeof this.moduleConfig.restrictions[sessionIpInfo.countryCode] !== "undefined")
         applyRestriction(this.moduleConfig.restrictions[sessionIpInfo.countryCode]);
     }

@@ -1,22 +1,22 @@
 import 'mocha';
 import sinon from 'sinon';
 import { expect } from 'chai';
-import * as nodeFetch from 'node-fetch';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { bindTestStubs, unbindTestStubs, loadDefaultTestConfig, awaitSleepPromise, returnDelayedPromise } from '../common';
-import { ServiceManager } from '../../src/common/ServiceManager';
-import { FaucetDatabase } from '../../src/db/FaucetDatabase';
-import { ModuleHookAction, ModuleManager } from '../../src/modules/ModuleManager';
-import { SessionManager } from '../../src/session/SessionManager';
-import { faucetConfig } from '../../src/config/FaucetConfig';
-import testData from './PassportModule.data.json';
-import { FaucetSession } from '../../src/session/FaucetSession';
-import { FaucetWebApi } from '../../src/webserv/FaucetWebApi';
-import { FaucetHttpResponse } from '../../src/webserv/FaucetHttpServer';
-import { PassportResolver } from '../../src/modules/passport/PassportResolver';
+import { bindTestStubs, unbindTestStubs, loadDefaultTestConfig, returnDelayedPromise } from '../common.js';
+import { FetchUtil } from '../../src/utils/FetchUtil.js';
+import { ServiceManager } from '../../src/common/ServiceManager.js';
+import { FaucetDatabase } from '../../src/db/FaucetDatabase.js';
+import { ModuleHookAction, ModuleManager } from '../../src/modules/ModuleManager.js';
+import { SessionManager } from '../../src/session/SessionManager.js';
+import { faucetConfig } from '../../src/config/FaucetConfig.js';
+import { DATA as testData } from './PassportModule.data.js';
+import { FaucetSession } from '../../src/session/FaucetSession.js';
+import { FaucetWebApi } from '../../src/webserv/FaucetWebApi.js';
+import { FaucetHttpResponse } from '../../src/webserv/FaucetHttpServer.js';
+import { PassportResolver } from '../../src/modules/passport/PassportResolver.js';
 
 
 describe("Faucet module: passport", () => {
@@ -24,7 +24,7 @@ describe("Faucet module: passport", () => {
 
   beforeEach(async () => {
     globalStubs = bindTestStubs({
-      "fetch": sinon.stub(nodeFetch, "default"),
+      "fetch": sinon.stub(FetchUtil, "fetch"),
     });
     loadDefaultTestConfig();
     await ServiceManager.GetService(FaucetDatabase).initialize();
@@ -56,14 +56,20 @@ describe("Faucet module: passport", () => {
       boostFactor: {
         2: 4,
       },
+      requireMinScore: 5,
+      skipHostingCheckScore: 10,
+      skipProxyCheckScore: 20,
+      allowGuestRefresh: true,
+      guestRefreshCooldown: 60,
     } as any;
     await ServiceManager.GetService(ModuleManager).initialize();
-    let clientConfig = ServiceManager.GetService(FaucetWebApi).onGetFaucetConfig(null, null);
+    let clientConfig = ServiceManager.GetService(FaucetWebApi).onGetFaucetConfig();
     expect(!!clientConfig.modules['passport']).to.equal(true, "no passport config exported");
-    expect(clientConfig.modules['passport'].refreshTimeout).to.equal(30, "client config missmatch: refreshTimeout");
-    expect(clientConfig.modules['passport'].manualVerification).to.equal(true, "client config missmatch: manualVerification");
-    expect(JSON.stringify(clientConfig.modules['passport'].stampScoring)).to.equal(JSON.stringify((faucetConfig.modules["passport"] as any).stampScoring), "client config missmatch: stampScoring");
-    expect(JSON.stringify(clientConfig.modules['passport'].boostFactor)).to.equal(JSON.stringify((faucetConfig.modules["passport"] as any).boostFactor), "client config missmatch: boostFactor");
+    expect(clientConfig.modules['passport'].refreshTimeout).to.equal(30, "client config mismatch: refreshTimeout");
+    expect(clientConfig.modules['passport'].manualVerification).to.equal(true, "client config mismatch: manualVerification");
+    expect(JSON.stringify(clientConfig.modules['passport'].stampScoring)).to.equal(JSON.stringify((faucetConfig.modules["passport"] as any).stampScoring), "client config mismatch: stampScoring");
+    expect(JSON.stringify(clientConfig.modules['passport'].overrideScores)).to.equal(JSON.stringify([10, 20, 5]), "client config mismatch: overrideScores");
+    expect(clientConfig.modules['passport'].guestRefresh).to.equal(60, "client config mismatch: guestRefresh");
   }).timeout(6000); // might take longer than the other passport tests, because the didkit lib is loaded when the module gets enabled first
 
   it("Start session with successful passport request", async () => {
@@ -95,7 +101,7 @@ describe("Faucet module: passport", () => {
     expect(passportScore?.score).to.equal(2, "unexpected passport score");
     expect(passportScore?.factor).to.equal(4, "unexpected passport factor");
     let clientInfo = await testSession.getSessionInfo();
-    expect(!!clientInfo.modules["passport"]).to.equal(false, "unexpected passport info in client session info");
+    expect(!!(clientInfo.modules as any)["passport"]).to.equal(false, "unexpected passport info in client session info");
   });
 
   it("Start session with passport api error", async () => {
@@ -150,9 +156,9 @@ describe("Faucet module: passport", () => {
     });
     expect(testSession.getSessionStatus()).to.equal("running", "unexpected session status");
     let clientInfo = await testSession.getSessionInfo();
-    expect(!!clientInfo.modules["passport"]).to.equal(true, "missing passport info in client session info");
-    expect(clientInfo.modules["passport"].score).to.equal(2, "unexpected passport score");
-    expect(clientInfo.modules["passport"].factor).to.equal(4, "unexpected passport factor");
+    expect(!!(clientInfo.modules as any)["passport"]).to.equal(true, "missing passport info in client session info");
+    expect((clientInfo.modules as any)["passport"].score).to.equal(2, "unexpected passport score");
+    expect((clientInfo.modules as any)["passport"].factor).to.equal(4, "unexpected passport factor");
   });
 
   it("Get passport details for running session", async () => {
@@ -184,7 +190,7 @@ describe("Faucet module: passport", () => {
     let passportDetailsRsp = await ServiceManager.GetService(FaucetWebApi).onApiRequest({
       method: "GET",
       url: "/api/getPassportInfo?session=" + testSession.getSessionId(),
-    } as any, null);
+    } as any, undefined);
     expect(passportDetailsRsp instanceof FaucetHttpResponse).to.equal(false, "unexpected plain http response");
     expect(passportDetailsRsp.passport?.found).to.equal(true, "no passport details returned");
     expect(passportDetailsRsp.score.score).to.equal(2, "unexpected passport score");
@@ -200,7 +206,7 @@ describe("Faucet module: passport", () => {
     let passportDetailsRsp = await ServiceManager.GetService(FaucetWebApi).onApiRequest({
       method: "GET",
       url: "/api/getPassportInfo?session=62dff880-ffe6-4472-a19a-0859e134456f",
-    } as any, null);
+    } as any, undefined);
     expect(passportDetailsRsp instanceof FaucetHttpResponse).to.equal(false, "unexpected plain http response");
     expect(!!passportDetailsRsp.error).to.equal(true, "no error returned");
     expect(passportDetailsRsp.code).to.equal("INVALID_SESSION", "unexpected error code");
@@ -215,7 +221,7 @@ describe("Faucet module: passport", () => {
     let passportDetailsRsp = await ServiceManager.GetService(FaucetWebApi).onApiRequest({
       method: "GET",
       url: "/api/refreshPassport?session=62dff880-ffe6-4472-a19a-0859e134456f",
-    } as any, null);
+    } as any, undefined);
     expect(passportDetailsRsp instanceof FaucetHttpResponse).to.equal(false, "unexpected plain http response");
     expect(!!passportDetailsRsp.error).to.equal(true, "no error returned");
     expect(passportDetailsRsp.code).to.equal("INVALID_SESSION", "unexpected error code");
@@ -249,7 +255,7 @@ describe("Faucet module: passport", () => {
     let passportDetailsRsp = await ServiceManager.GetService(FaucetWebApi).onApiRequest({
       method: "GET",
       url: "/api/getPassportInfo?session=" + testSession.getSessionId(),
-    } as any, null);
+    } as any, undefined);
     expect(passportDetailsRsp instanceof FaucetHttpResponse).to.equal(false, "unexpected plain http response");
     expect(passportDetailsRsp.passport?.found).to.equal(false, "no passport details returned");
     expect(passportDetailsRsp.score.score).to.equal(0, "unexpected passport score");
@@ -291,7 +297,7 @@ describe("Faucet module: passport", () => {
     expect(passportScore?.score).to.equal(2, "unexpected passport score");
     expect(passportScore?.factor).to.equal(4, "unexpected passport factor");
     let clientInfo = await testSession.getSessionInfo();
-    expect(!!clientInfo.modules["passport"]).to.equal(false, "unexpected passport info in client session info");
+    expect(!!(clientInfo.modules as any)["passport"]).to.equal(false, "unexpected passport info in client session info");
   });
 
   it("Check passport cache (DB cache)", async () => {
@@ -329,7 +335,7 @@ describe("Faucet module: passport", () => {
     expect(passportScore?.score).to.equal(2, "unexpected passport score");
     expect(passportScore?.factor).to.equal(4, "unexpected passport factor");
     let clientInfo = await testSession.getSessionInfo();
-    expect(!!clientInfo.modules["passport"]).to.equal(false, "unexpected passport info in client session info");
+    expect(!!(clientInfo.modules as any)["passport"]).to.equal(false, "unexpected passport info in client session info");
   });
 
   it("Check passport cache (DB cache, race condition)", async () => {
@@ -401,7 +407,7 @@ describe("Faucet module: passport", () => {
     let passportRefreshRsp = await ServiceManager.GetService(FaucetWebApi).onApiRequest({
       method: "GET",
       url: "/api/refreshPassport?session=" + testSession.getSessionId(),
-    } as any, null);
+    } as any, undefined);
     expect(passportRefreshRsp instanceof FaucetHttpResponse).to.equal(false, "unexpected plain http response");
     expect(passportRefreshRsp.passport?.found).to.equal(true, "no passport details returned in refresh result");
     expect(passportRefreshRsp.score.score).to.equal(2, "unexpected passport score in refresh result");

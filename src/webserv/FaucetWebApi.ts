@@ -1,17 +1,17 @@
 import { IncomingMessage } from "http";
-import { faucetConfig } from "../config/FaucetConfig";
-import { ServiceManager } from "../common/ServiceManager";
-import { EthWalletManager } from "../eth/EthWalletManager";
-import { FaucetStatus, IFaucetStatus } from "../services/FaucetStatus";
-import { FaucetHttpResponse } from "./FaucetHttpServer";
-import { SessionManager } from "../session/SessionManager";
-import { FaucetSession, FaucetSessionStatus, FaucetSessionStoreData, FaucetSessionTask, IClientSessionInfo } from "../session/FaucetSession";
-import { ModuleHookAction, ModuleManager } from "../modules/ModuleManager";
-import { IFaucetResultSharingConfig } from "../config/ConfigShared";
-import { FaucetError } from "../common/FaucetError";
-import { EthClaimInfo, EthClaimManager } from "../eth/EthClaimManager";
-import { buildFaucetStatus, buildQueueStatus, buildSessionStatus } from "./api/faucetStatus";
-import { sha256 } from "../utils/CryptoUtils";
+import { faucetConfig } from "../config/FaucetConfig.js";
+import { ServiceManager } from "../common/ServiceManager.js";
+import { EthWalletManager } from "../eth/EthWalletManager.js";
+import { FaucetStatus, IFaucetStatus } from "../services/FaucetStatus.js";
+import { FaucetHttpResponse } from "./FaucetHttpServer.js";
+import { SessionManager } from "../session/SessionManager.js";
+import { FaucetSession, FaucetSessionStatus, FaucetSessionStoreData, FaucetSessionTask, IClientSessionInfo } from "../session/FaucetSession.js";
+import { ModuleHookAction, ModuleManager } from "../modules/ModuleManager.js";
+import { IFaucetResultSharingConfig } from "../config/ConfigShared.js";
+import { FaucetError } from "../common/FaucetError.js";
+import { EthClaimInfo, EthClaimManager } from "../eth/EthClaimManager.js";
+import { buildFaucetStatus, buildQueueStatus, buildSessionStatus } from "./api/faucetStatus.js";
+import { sha256 } from "../utils/CryptoUtils.js";
 
 export interface IFaucetApiUrl {
   path: string[];
@@ -62,7 +62,7 @@ export interface IClientSessionStatus {
 }
 
 
-const FAUCETSTATUS_CACHE_TIME = 10;
+export const FAUCETSTATUS_CACHE_TIME = 10;
 
 export class FaucetWebApi {
   private apiEndpoints: {[endpoint: string]: (req: IncomingMessage, url: IFaucetApiUrl, body: Buffer) => Promise<any>} = {};
@@ -158,7 +158,7 @@ export class FaucetWebApi {
     return faucetHtml;
   }
 
-  public onGetFaucetConfig(clientVersion: string, sessionId: string): IClientFaucetConfig {
+  public onGetFaucetConfig(clientVersion?: string, sessionId?: string): IClientFaucetConfig {
     let faucetSession = sessionId ? ServiceManager.GetService(SessionManager).getSession(sessionId, [FaucetSessionStatus.RUNNING, FaucetSessionStatus.CLAIMABLE]) : null;
     let faucetStatus = ServiceManager.GetService(FaucetStatus).getFaucetStatus(clientVersion, faucetSession);
     let ethWalletManager = ServiceManager.GetService(EthWalletManager);
@@ -211,11 +211,16 @@ export class FaucetWebApi {
       sessionInfo = await session.getSessionInfo();
     } catch(ex) {
       if(ex instanceof FaucetError) {
-        return {
+        let data: any = {
           status: FaucetSessionStatus.FAILED,
           failedCode: ex.getCode(),
           failedReason: ex.message,
         }
+        if(ex.data) {
+          data.failedData = (ex as any).data;
+        }
+
+        return data;
       }
       else {
         return {
@@ -278,20 +283,10 @@ export class FaucetWebApi {
     try {
       await ServiceManager.GetService(EthClaimManager).createSessionClaim(sessionData, userInput);
     } catch(ex) {
-      if(ex instanceof FaucetError) {
-        return {
-          status: FaucetSessionStatus.FAILED,
-          failedCode: ex.getCode(),
-          failedReason: ex.message,
-        }
-      }
-      else {
-        console.error(ex, ex.stack);
-        return {
-          status: FaucetSessionStatus.FAILED,
-          failedCode: "INTERNAL_ERROR",
-          failedReason: ex.toString(),
-        }
+      return {
+        status: FaucetSessionStatus.FAILED,
+        failedCode: ex instanceof FaucetError ? ex.getCode() : "",
+        failedReason: ex.message,
       }
     }
 
@@ -307,9 +302,9 @@ export class FaucetWebApi {
       balance: sessionData.dropAmount,
       target: sessionData.targetAddr,
     };
-    if(sessionData.status === FaucetSessionStatus.FAILED) {
-      sessionStatus.failedCode = sessionData.data ? sessionData.data['failed.code'] : null;
-      sessionStatus.failedReason = sessionData.data ? sessionData.data['failed.reason'] : null;
+    if(sessionData.status === FaucetSessionStatus.FAILED && sessionData.data) {
+      sessionStatus.failedCode =  sessionData.data['failed.code'];
+      sessionStatus.failedReason = sessionData.data['failed.reason'];
     }
     if(sessionData.claim) {
       sessionStatus.claimIdx = sessionData.claim.claimIdx;

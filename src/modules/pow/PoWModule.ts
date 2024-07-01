@@ -1,18 +1,18 @@
 import * as crypto from "crypto";
-import { ServiceManager } from "../../common/ServiceManager";
-import { FaucetSession, FaucetSessionStatus } from "../../session/FaucetSession";
-import { BaseModule } from "../BaseModule";
-import { ModuleHookAction } from "../ModuleManager";
-import { defaultConfig, IPoWConfig, PoWHashAlgo } from './PoWConfig';
-import { FaucetHttpServer } from "../../webserv/FaucetHttpServer";
+import { ServiceManager } from "../../common/ServiceManager.js";
+import { FaucetSession, FaucetSessionStatus } from "../../session/FaucetSession.js";
+import { BaseModule } from "../BaseModule.js";
+import { ModuleHookAction } from "../ModuleManager.js";
+import { defaultConfig, IPoWConfig, PoWHashAlgo } from './PoWConfig.js';
+import { FaucetHttpServer } from "../../webserv/FaucetHttpServer.js";
 import { IncomingMessage } from "http";
 import { WebSocket } from 'ws';
-import { PoWValidator } from "./validator/PoWValidator";
-import { SessionManager } from "../../session/SessionManager";
-import { PoWClient } from "./PoWClient";
-import { PoWSession } from "./PoWSession";
-import { FaucetError } from "../../common/FaucetError";
-import { FaucetLogLevel, FaucetProcess } from "../../common/FaucetProcess";
+import { PoWValidator } from "./validator/PoWValidator.js";
+import { SessionManager } from "../../session/SessionManager.js";
+import { PoWClient } from "./PoWClient.js";
+import { PoWSession } from "./PoWSession.js";
+import { FaucetError } from "../../common/FaucetError.js";
+import { FaucetLogLevel, FaucetProcess } from "../../common/FaucetProcess.js";
 
 export class PoWModule extends BaseModule<IPoWConfig> {
   protected readonly moduleDefaultConfig = defaultConfig;
@@ -106,6 +106,8 @@ export class PoWModule extends BaseModule<IPoWConfig> {
   }
 
   private async processSessionInfo(session: FaucetSession, moduleState: any): Promise<void> {
+    if(session.getSessionData<Array<string>>("skip.modules", []).indexOf(this.moduleName) !== -1)
+      return;
     if(session.getSessionStatus() !== FaucetSessionStatus.RUNNING)
       return;
     let powSession = this.getPoWSession(session);
@@ -130,11 +132,15 @@ export class PoWModule extends BaseModule<IPoWConfig> {
   }
 
   private async processSessionRestore(session: FaucetSession): Promise<void> {
+    if(session.getSessionData<Array<string>>("skip.modules", []).indexOf(this.moduleName) !== -1)
+      return;
     let powSession = this.getPoWSession(session);
     this.resetSessionIdleTimer(powSession);
   }
 
   private async processSessionComplete(session: FaucetSession): Promise<void> {
+    if(session.getSessionData<Array<string>>("skip.modules", []).indexOf(this.moduleName) !== -1)
+      return;
     setTimeout(() => {
       let powSession = this.getPoWSession(session);
       if(session.getSessionStatus() === FaucetSessionStatus.FAILED)

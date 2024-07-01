@@ -1,4 +1,4 @@
-import { IBaseModuleConfig } from "../BaseModule";
+import { IBaseModuleConfig } from "../BaseModule.js";
 
 export interface IWhitelistConfig extends IBaseModuleConfig {
   whitelistPattern: { // ip info pattern based restrictions
@@ -11,7 +11,7 @@ export interface IWhitelistConfig extends IBaseModuleConfig {
 }
 
 export interface IWhitelistEntryConfig {
-  reward: number;
+  reward?: number;
   skipModules?: string[];
   msgkey?: string;
   message?: string;

@@ -1,3 +1,4 @@
+import { PoWHashAlgo } from "../types/PoWMinerSrc";
 
 export interface IFaucetConfig {
   faucetTitle: string;
@@ -27,6 +28,7 @@ export interface IFaucetConfig {
     github?: IGithubModuleConfig;
     pow?: IPoWModuleConfig;
     passport?: IPassportModuleConfig;
+    zupass?: IZupassModuleConfig;
   };
 }
 
@@ -48,6 +50,23 @@ export interface IGithubModuleConfig {
   callbackState: string;
 }
 
+export interface IZupassModuleConfig {
+  url: string;
+  api: string;
+  redirectUrl: string;
+  event: {
+    name: string;
+    eventIds: string[];
+    productIds: string[];
+  };
+  watermark: string;
+  nullifier: string;
+  loginLogo: string;
+  loginLabel: string;
+  userLabel: string;
+  infoHtml: string;
+}
+
 export interface IPoWModuleConfig {
   powWsUrl: string;
   powTimeout: number;
@@ -56,12 +75,6 @@ export interface IPoWModuleConfig {
   powDifficulty: number;
   powNonceCount: number;
   powHashrateLimit: number;
-}
-
-export enum PoWHashAlgo {
-  SCRYPT      = "scrypt",
-  CRYPTONIGHT = "cryptonight",
-  ARGON2      = "argon2",
 }
 
 export type PoWParams = {
@@ -90,6 +103,8 @@ export interface IPassportModuleConfig {
   manualVerification: boolean;
   stampScoring: {[stamp: string]: number};
   boostFactor: {[score: number]: number};
+  overrideScores: [number, number, number];
+  guestRefresh: number | boolean;
 }
 
 

@@ -1,5 +1,5 @@
 # build-server env
-FROM node:18-slim AS build-server-env
+FROM node:21-slim AS build-server-env
 WORKDIR /build
 COPY package*.json ./
 RUN npm install
@@ -10,7 +10,7 @@ COPY ./src src
 RUN npm run bundle
 
 # build-client env
-FROM node:18-slim AS build-client-env
+FROM node:21-slim AS build-client-env
 WORKDIR /build
 COPY faucet-client/package*.json ./faucet-client/
 COPY ./libs libs
@@ -24,10 +24,10 @@ FROM node:18-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 RUN update-ca-certificates
-COPY --from=build-server-env /build/dist ./dist
+COPY --from=build-server-env /build/bundle ./bundle
 COPY --from=build-client-env /build/static ./static
 COPY ./faucet-config.yaml .
 RUN cp ./static/index.html ./static/index.seo.html && chmod 777 ./static/index.seo.html
 
 EXPOSE 8080
-ENTRYPOINT [ "node", "--no-deprecation", "dist/powfaucet.js" ]
+ENTRYPOINT [ "node", "--no-deprecation", "bundle/powfaucet.cjs" ]

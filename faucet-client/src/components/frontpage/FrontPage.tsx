@@ -6,6 +6,7 @@ import { FaucetInput } from './FaucetInput';
 import { IFaucetContext } from '../../common/FaucetContext';
 import { FaucetSession } from '../../common/FaucetSession';
 import { RestoreSession } from './RestoreSession';
+import { PassportInfo } from '../passport/PassportInfo';
 
 export interface IFrontPageProps {
   faucetContext: IFaucetContext;
@@ -77,11 +78,19 @@ export class FrontPage extends React.PureComponent<IFrontPageProps, IFrontPageSt
   }
 
 	public render(): React.ReactElement<IFrontPageProps> {
+    let faucetImage: string;
+    if(this.props.faucetConfig.faucetImage) {
+      faucetImage = this.props.faucetConfig.faucetImage;
+      if(faucetImage.match(/^\/images\//) && this.props.faucetContext.faucetUrls.imagesUrl) {
+        faucetImage = this.props.faucetContext.faucetUrls.imagesUrl + faucetImage.substring(7);
+      }
+    }
+
     return (
       <div className='page-frontpage'>
         <div className='faucet-frontimage'>
-          {this.props.faucetConfig.faucetImage ?
-            <img src={this.props.faucetConfig.faucetImage} className="image" />
+          {faucetImage ?
+            <img src={faucetImage} className="image" />
           : null}
         </div>
         <FaucetInput 
@@ -104,8 +113,76 @@ export class FrontPage extends React.PureComponent<IFrontPageProps, IFrontPageSt
   private async onSubmitInputs(inputData: any): Promise<void> {
     try {
       let sessionInfo = await this.props.faucetContext.faucetApi.startSession(inputData);
-      if(sessionInfo.status === "failed")
+      if(sessionInfo.status === "failed") {
+        let canStartWithScore = false;
+        let requiredScore = 0;
+        let ipflags: string[] = [];
+
+        if(sessionInfo.failedCode == "IPINFO_RESTRICTION" && this.props.faucetConfig.modules["passport"] && this.props.faucetConfig.modules["passport"].guestRefresh !== false && sessionInfo.failedData["ipflags"]) {
+          canStartWithScore = true;
+          if(sessionInfo.failedData["ipflags"][0] && this.props.faucetConfig.modules["passport"].overrideScores[0] > 0) {
+            canStartWithScore = true;
+            ipflags.push("hosting");
+            if(this.props.faucetConfig.modules["passport"].overrideScores[0] > requiredScore)
+              requiredScore = this.props.faucetConfig.modules["passport"].overrideScores[0];
+          }
+          if(sessionInfo.failedData["ipflags"][1] && this.props.faucetConfig.modules["passport"].overrideScores[1] > 0) {
+            canStartWithScore = true;
+            ipflags.push("proxy");
+            if(this.props.faucetConfig.modules["passport"].overrideScores[1] > requiredScore)
+              requiredScore = this.props.faucetConfig.modules["passport"].overrideScores[1];
+          }
+        }
+        else if(sessionInfo.failedCode == "PASSPORT_SCORE" && this.props.faucetConfig.modules["passport"] && this.props.faucetConfig.modules["passport"].guestRefresh !== false) {
+          requiredScore = this.props.faucetConfig.modules["passport"].overrideScores[2];
+          canStartWithScore = true;
+        }
+
+        if(canStartWithScore) {
+          // special case, the session is denied as the users IP is flagged as hosting/proxy range.
+          // however, the faucet allows skipping this check for passport trusted wallets
+          // show a dialog that shows the score & allows refreshing the passport to meet the requirement
+
+          let errMsg: string;
+          if(ipflags.length > 0) {
+            errMsg = "The faucet denied starting a session because your IP Address is marked as " + ipflags.join(" and ") + " range.";
+          } else {
+            errMsg = "The faucet denied starting a session because your wallet does not meet the minimum passport score.";
+          }
+
+          this.props.faucetContext.showDialog({
+            title: "Could not start session",
+            size: "lg",
+            body: (
+              <div className='passport-dialog error-dialog'>
+                <PassportInfo 
+                  pageContext={this.props.faucetContext}
+                  faucetConfig={this.props.faucetConfig}
+                  targetAddr={sessionInfo.failedData["address"]}
+                  refreshFn={(passportScore) => {
+                    
+                  }}
+                >
+                  <div>
+                    <div className='alert alert-danger'>{errMsg}</div>
+                    <div className="boost-descr">
+                      You can verify your unique identity and increase your score using <a href="https://passport.gitcoin.co/#/dashboard" target="_blank">Gitcoin Passport</a>.
+                    </div>
+                    <div className="boost-descr2">
+                      Ensure your provided address achieves a minimum score of {requiredScore} to initiate a session.
+                    </div>
+                  </div>
+                </PassportInfo>
+              </div>
+            ),
+            closeButton: { caption: "Close" },
+          });
+
+          throw null; // throw without dialog
+        }
+
         throw (sessionInfo.failedCode ? "[" + sessionInfo.failedCode + "] " : "") + sessionInfo.failedReason;
+      }
 
       let session = new FaucetSession(this.props.faucetContext, sessionInfo.session, sessionInfo);
       this.props.faucetContext.activeSession = session;
@@ -131,11 +208,13 @@ export class FrontPage extends React.PureComponent<IFrontPageProps, IFrontPageSt
           throw "unexpected session state";
       }
     } catch(ex) {
-      this.props.faucetContext.showDialog({
-        title: "Could not start session",
-        body: (<div className='alert alert-danger'>{ex.toString()}</div>),
-        closeButton: { caption: "Close" },
-      });
+      if(ex) {
+        this.props.faucetContext.showDialog({
+          title: "Could not start session",
+          body: (<div className='alert alert-danger'>{ex.toString()}</div>),
+          closeButton: { caption: "Close" },
+        });
+      }
       throw ex;
     }
   }

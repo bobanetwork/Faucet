@@ -1,24 +1,24 @@
-import { ServiceManager } from "../../common/ServiceManager";
-import { EthWalletManager } from "../../eth/EthWalletManager";
-import { FaucetSession, FaucetSessionStoreData } from "../../session/FaucetSession";
-import { BaseModule } from "../BaseModule";
-import { ModuleHookAction } from "../ModuleManager";
-import { defaultConfig, IRecurringLimitConfig, IRecurringLimitsConfig } from './RecurringLimitsConfig';
-import { FaucetError } from '../../common/FaucetError';
-import { FaucetDatabase } from "../../db/FaucetDatabase";
-import { renderTimespan } from "../../utils/DateUtils";
-import { ISessionRewardFactor } from "../../session/SessionRewardFactor";
+import { ServiceManager } from "../../common/ServiceManager.js";
+import { EthWalletManager } from "../../eth/EthWalletManager.js";
+import { FaucetSession, FaucetSessionStoreData } from "../../session/FaucetSession.js";
+import { BaseModule } from "../BaseModule.js";
+import { ModuleHookAction } from "../ModuleManager.js";
+import { defaultConfig, IRecurringLimitConfig, IRecurringLimitsConfig } from './RecurringLimitsConfig.js';
+import { FaucetError } from '../../common/FaucetError.js';
+import { FaucetDatabase } from "../../db/FaucetDatabase.js";
+import { renderTimespan } from "../../utils/DateUtils.js";
+import { ISessionRewardFactor } from "../../session/SessionRewardFactor.js";
 
 export class RecurringLimitsModule extends BaseModule<IRecurringLimitsConfig> {
   protected readonly moduleDefaultConfig = defaultConfig;
 
   protected override startModule(): Promise<void> {
     this.moduleManager.addActionHook(
-      this, ModuleHookAction.SessionStart, 6, "Recurring limits check",
+      this, ModuleHookAction.SessionStart, 7, "Recurring limits check",
       (session: FaucetSession, userInput: any) => this.processSessionStart(session, userInput)
     );
     this.moduleManager.addActionHook(
-      this, ModuleHookAction.SessionRewardFactor, 6, "recurring limits factor",
+      this, ModuleHookAction.SessionRewardFactor, 6, "recurring limits factor", 
       (session: FaucetSession, rewardFactors: ISessionRewardFactor[]) => this.processSessionRewardFactor(session, rewardFactors)
     );
     return Promise.resolve();
@@ -59,19 +59,19 @@ export class RecurringLimitsModule extends BaseModule<IRecurringLimitsConfig> {
         let errMsg = limit.message || [
           "You have already created ",
           finishedSessions.length,
-          (finishedSessions.length > 1 ? " sessions" : " session"),
+          (finishedSessions.length > 1 ? " sessions" : " session"), 
           " in the last ",
           renderTimespan(limit.duration)
         ].join("");
         throw new FaucetError(
-          "RECURRING_LIMIT",
+          "RECURRING_LIMIT", 
           errMsg,
         );
         }
     }
     if(limit.limitAmount > 0) {
       let totalAmount = 0n;
-      finishedSessions.forEach((session) => totalAmount += BigInt(session.dropAmount ?? '0'));
+      finishedSessions.forEach((session) => totalAmount += BigInt(session.dropAmount));
       if(totalAmount >= BigInt(limit.limitAmount)) {
         limitApplies = true;
         if(!limit.action || limit.action == "block") {
@@ -82,7 +82,7 @@ export class RecurringLimitsModule extends BaseModule<IRecurringLimitsConfig> {
             renderTimespan(limit.duration)
           ].join("");
           throw new FaucetError(
-            "RECURRING_LIMIT",
+            "RECURRING_LIMIT", 
             errMsg,
           );
         }
@@ -97,6 +97,8 @@ export class RecurringLimitsModule extends BaseModule<IRecurringLimitsConfig> {
   }
 
   private async processSessionRewardFactor(session: FaucetSession, rewardFactors: ISessionRewardFactor[]) {
+    if(session.getSessionData<Array<string>>("skip.modules", []).indexOf(this.moduleName) !== -1)
+      return;
     let rewardPerc = session.getSessionData("recurring-limits.factor", 100);
     if(rewardPerc !== 100) {
       rewardFactors.push({

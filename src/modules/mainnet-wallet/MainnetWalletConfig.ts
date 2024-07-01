@@ -1,9 +1,15 @@
-import { IBaseModuleConfig } from "../BaseModule";
+import { IBaseModuleConfig } from "../BaseModule.js";
 
 export interface IMainnetWalletConfig extends IBaseModuleConfig {
   rpcHost: string;
   minTxCount: number;
   minBalance: number;
+  minErc20Balances: {
+    name: string;
+    address: string;
+    decimals?: number;
+    minBalance: number;
+  }[]
 }
 
 export const defaultConfig: IMainnetWalletConfig = {
@@ -11,4 +17,5 @@ export const defaultConfig: IMainnetWalletConfig = {
   rpcHost: null,
   minTxCount: 0,
   minBalance: 0,
+  minErc20Balances: [],
 }
