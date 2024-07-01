@@ -88,11 +88,11 @@ export class EthWalletManager {
       this.initChainCommon(BigInt(faucetConfig.ethChainId));
 
       if (faucetConfig.ethWalletKey) {
-    let privkey = faucetConfig.ethWalletKey;
-    if(privkey.match(/^0x/))
-      privkey = privkey.substring(2);
-    this.walletKey = Buffer.from(privkey, "hex");
-    this.walletAddr = EthUtil.toChecksumAddress("0x"+EthUtil.privateToAddress(this.walletKey).toString("hex"));
+          let privkey = faucetConfig.ethWalletKey;
+          if (privkey.match(/^0x/))
+              privkey = privkey.substring(2);
+          this.walletKey = Buffer.from(privkey, "hex");
+          this.walletAddr = EthUtil.toChecksumAddress("0x" + EthUtil.privateToAddress(this.walletKey).toString("hex"));
   } else {
       ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.INFO, "Using AWS KMS since no private key provided.");
       this.awsKms = new KMSSigner({
