@@ -630,9 +630,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bobanetwork/aws-kms@file:./kms/bobanetwork-aws-kms-1.1.0.tgz":
+"@bobanetwork/aws-kms@^1.1.0":
   version "1.1.0"
-  resolved "file:./kms/bobanetwork-aws-kms-1.1.0.tgz#3483c706e2f05e5f04f3d1823537e77865e0b62c"
+  resolved "https://registry.yarnpkg.com/@bobanetwork/aws-kms/-/aws-kms-1.1.0.tgz#8be8778aa6479f1bac03cdb34eb5f72d991a5a26"
+  integrity sha512-FNLt5GDO6ZoDwZZvEigQApzN0P9Kx7v6iImmtLw3L1pIzdgSCAzt7Oc0ri0UOfQXiFMuybIXyOifDO0Vdt9gPg==
   dependencies:
     "@aws-sdk/client-kms" "3.363.0"
     "@bobanetwork/light-bridge-chains" "1.1.2"
