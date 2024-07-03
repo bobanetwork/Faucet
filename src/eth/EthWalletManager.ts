@@ -407,7 +407,7 @@ export class EthWalletManager {
     if(target.match(/^0X/))
       target = "0x" + target.substring(2);
 
-    let tx: EthTx.LegacyTransaction | EthTx.FeeMarketEIP1559Transaction;
+    let tx: EthTx.Transaction | EthTx.FeeMarketEIP1559Transaction;
     if(faucetConfig.ethLegacyTx) {
       // legacy transaction
       let gasPrice = await this.web3.eth.getGasPrice();
@@ -415,7 +415,7 @@ export class EthWalletManager {
       if(faucetConfig.ethTxMaxFee > 0 && gasPrice > faucetConfig.ethTxMaxFee)
         gasPrice = BigInt(faucetConfig.ethTxMaxFee);
 
-      tx = EthTx.LegacyTransaction.fromTxData({
+      tx = EthTx.Transaction.fromTxData({
         nonce: nonce,
         gasLimit: gasLimit || faucetConfig.ethTxGasLimit,
         gasPrice: gasPrice,
@@ -444,7 +444,7 @@ export class EthWalletManager {
       if (this.walletKey) {
           tx = tx.sign(this.walletKey);
       } else {
-          tx = (await this.awsKms.getSignedKmsTx(Number(this.chainCommon.chainId()), tx as any, !faucetConfig.ethLegacyTx)) as any
+          tx = (await this.awsKms.getSignedKmsTx(Number(this.chainCommon.chainId()), tx, !faucetConfig.ethLegacyTx))
       }
     return Buffer.from(tx.serialize()).toString('hex');
   }
