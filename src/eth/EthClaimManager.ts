@@ -303,14 +303,16 @@ export class EthClaimManager {
       claimTx.claim.claimStatus = ClaimTxStatus.PROCESSING;
 
       // send transaction
-      let { txPromise } = await ethWalletManager.sendClaimTx(claimTx);
-      this.pendingTxQueue[claimTx.claim.txHash] = claimTx;
-      
-      ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.INFO, "Submitted claim transaction " + claimTx.session + " [" + ethWalletManager.readableAmount(BigInt(claimTx.amount)) + "] to: " + claimTx.target + ": " + claimTx.claim.txHash);
-      claimTx.claim.claimStatus = ClaimTxStatus.PENDING;
-      this.updateClaimStatus(claimTx);
+      const transactions = await ethWalletManager.sendClaimTx(claimTx);
+      transactions.forEach(t => {
+        this.pendingTxQueue[claimTx.claim.txHash] = claimTx;
+        
+        ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.INFO, "Submitted claim transaction " + claimTx.session + " [" + ethWalletManager.readableAmount(BigInt(claimTx.amount)) + "] to: " + claimTx.target + ": " + t.txHash);
+        claimTx.claim.claimStatus = ClaimTxStatus.PENDING;
+        this.updateClaimStatus(claimTx);
 
-      this.awaitTxReceipt(claimTx, txPromise);
+        this.awaitTxReceipt(claimTx, t.txPromise);
+      })
     } catch(ex) {
       claimTx.claim.claimStatus = ClaimTxStatus.FAILED;
       claimTx.claim.txError = "Processing Exception: " + ex.toString();
