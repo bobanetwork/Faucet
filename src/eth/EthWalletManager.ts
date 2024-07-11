@@ -418,7 +418,9 @@ export class EthWalletManager {
             (claimInfo.claim.txNonce += 1),
             this.tokenState.getTransferData(
               claimInfo.target,
-              BigInt(claimInfo.amount)
+              BigInt(
+                faucetConfig.erc20DropAmountIfBoth ?? BigInt(claimInfo.amount)
+              )
             )
           ),
         ];

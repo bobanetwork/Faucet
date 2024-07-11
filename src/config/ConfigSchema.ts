@@ -53,6 +53,7 @@ export interface IConfigSchema {
 
   maxDropAmount: number;
   minDropAmount: number;
+  erc20DropAmountIfBoth?: number; // If faucetCoinType is "both", we use this amount for erc20 transaction
   sessionTimeout: number;
   sessionCleanup: number;
   sessionSaveTime: number;
