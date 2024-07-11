@@ -388,6 +388,13 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
               <a href={this.props.faucetConfig.ethTxExplorerLink.replace("{txid}", this.state.sessionStatus.claimHash)} target='_blank' rel='noopener noreferrer'>{this.state.sessionStatus.claimHash}</a> :
               <span>{this.state.sessionStatus.claimHash}</span>}
           </span>
+          {this.state.sessionStatus.secondClaimData && (
+            <span className='txhash'>
+              {this.props.faucetConfig.ethTxExplorerLink ? 
+                <a href={this.props.faucetConfig.ethTxExplorerLink.replace("{txid}", this.state.sessionStatus.secondClaimData.txHash)} target='_blank' rel='noopener noreferrer'>{this.state.sessionStatus.secondClaimData.txHash}</a> :
+                <span>{this.state.sessionStatus.secondClaimData.txHash}</span>}
+            </span>
+          )}
           {this.renderResultSharing()}
         </div>
       </div>

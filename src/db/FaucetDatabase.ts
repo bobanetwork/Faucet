@@ -197,13 +197,12 @@ export class FaucetDatabase {
           [FaucetDbDriver.SQLITE]: `CREATE INDEX SessionsRemoteIPIdx ON Sessions (RemoteIP	ASC, StartTime	ASC);`,
           [FaucetDbDriver.MYSQL]: `ALTER TABLE Sessions ADD INDEX SessionsRemoteIPIdx (RemoteIP, StartTime);`,
           }));
-      /*
       case 1: // upgrade to version 2
         schemaVersion = 2;
-        this.db.exec(`
-          
-        `);
-      */
+        await this.db.exec(SQL.driverSql({
+          [FaucetDbDriver.SQLITE]: `ALTER TABLE Sessions ADD COLUMN SecondClaimData TEXT NULL;`,
+          [FaucetDbDriver.MYSQL]: `ALTER TABLE Sessions ADD COLUMN SecondClaimData TEXT NULL;`,
+        }));
     }
     if(schemaVersion !== oldVersion) {
       ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.INFO, "Upgraded FaucetStore schema from version " + oldVersion + " to version " + schemaVersion);
@@ -278,7 +277,7 @@ export class FaucetDatabase {
   public async selectSessionsSql(selectSql: string, args: any[], skipData?: boolean): Promise<FaucetSessionStoreData[]> {
     let fields = ["SessionId","Status","StartTime","TargetAddr","DropAmount","RemoteIP","Tasks"];
     if(!skipData)
-      fields.push("Data","ClaimData");
+      fields.push("Data","ClaimData","SecondClaimData");
 
     let sql = [
       "SELECT ",
@@ -296,6 +295,7 @@ export class FaucetDatabase {
       Tasks: string;
       Data: string;
       ClaimData: string;
+      SecondClaimData: string;
     }[];
 
     if(rows.length === 0)
@@ -312,6 +312,7 @@ export class FaucetDatabase {
         tasks: JSON.parse(row.Tasks),
         data: skipData ? undefined : JSON.parse(row.Data),
         claim: skipData ? undefined : (row.ClaimData ? JSON.parse(row.ClaimData) : null),
+        secondClaimData: skipData ? undefined : (row.SecondClaimData ? JSON.parse(row.SecondClaimData) : null)
       };
     });
   }
@@ -350,7 +351,7 @@ export class FaucetDatabase {
   }
 
   public async getSession(sessionId: string): Promise<FaucetSessionStoreData> {
-    let row = await this.db.get("SELECT SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData FROM Sessions WHERE SessionId = ?", [sessionId]) as {
+    let row = await this.db.get("SELECT SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData FROM Sessions WHERE SessionId = ?", [sessionId]) as {
       SessionId: string;
       Status: string;
       StartTime: number;
@@ -360,6 +361,7 @@ export class FaucetDatabase {
       Tasks: string;
       Data: string;
       ClaimData: string;
+      SecondClaimData: string;
     };
 
     if(!row)
@@ -375,14 +377,15 @@ export class FaucetDatabase {
       tasks: JSON.parse(row.Tasks),
       data: JSON.parse(row.Data),
       claim: row.ClaimData ? JSON.parse(row.ClaimData) : null,
+      secondClaimData: row.SecondClaimData ? JSON.parse(row.SecondClaimData) : null
     };
   }
 
   public async updateSession(sessionData: FaucetSessionStoreData): Promise<void> {
     await this.db.run(
       SQL.driverSql({
-        [FaucetDbDriver.SQLITE]: "INSERT OR REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData) VALUES (?,?,?,?,?,?,?,?,?)",
-        [FaucetDbDriver.MYSQL]: "REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData) VALUES (?,?,?,?,?,?,?,?,?)",
+        [FaucetDbDriver.SQLITE]: "INSERT OR REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [FaucetDbDriver.MYSQL]: "REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData) VALUES (?,?,?,?,?,?,?,?,?,?)",
       }),
       [
         sessionData.sessionId,
@@ -394,6 +397,7 @@ export class FaucetDatabase {
         JSON.stringify(sessionData.tasks),
         JSON.stringify(sessionData.data),
         sessionData.claim ? JSON.stringify(sessionData.claim) : null,
+        sessionData.secondClaimData ? JSON.stringify(sessionData.claim) : null
       ]
     );
   }
@@ -411,9 +415,11 @@ export class FaucetDatabase {
         status = FaucetSessionStatus.CLAIMING;
         break;
     }
-    await this.db.run("UPDATE Sessions SET Status = ?, ClaimData = ? WHERE Status = 'claiming' AND SessionId = ?", [
+    
+    await this.db.run("UPDATE Sessions SET Status = ?, ClaimData = ?, SecondClaimData = ? WHERE Status = 'claiming' AND SessionId = ?", [
       status,
       JSON.stringify(claimData),
+      JSON.stringify(claimData.secondClaimData) ?? "",
       sessionId
     ]);
   }

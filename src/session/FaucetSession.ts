@@ -36,6 +36,7 @@ export interface FaucetSessionStoreData {
   tasks: any;
   data: any;
   claim: EthClaimData | null;
+  secondClaimData: EthClaimData | null;
 }
 
 export interface IClientSessionInfo {
@@ -149,6 +150,7 @@ export class FaucetSession {
       tasks: this.blockingTasks,
       data: this.sessionDataDict,
       claim: null,
+      secondClaimData: null
     };
   }
 

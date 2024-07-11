@@ -15,6 +15,9 @@ export interface IFaucetSessionStatus {
   claimStatus?: string;
   claimBlock?: number;
   claimHash?: string;
+  secondClaimData?: {
+    txHash?: string;
+  }
   claimMessage?: string;
   failedCode?: string;
   failedReason?: string;

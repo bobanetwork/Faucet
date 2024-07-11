@@ -52,6 +52,9 @@ export interface IClientSessionStatus {
   claimStatus?: string;
   claimBlock?: number;
   claimHash?: string;
+  secondClaimData?: {
+    txHash?: string;
+  }
   claimMessage?: string;
   failedCode?: string;
   failedReason?: string;
@@ -312,6 +315,9 @@ export class FaucetWebApi {
       sessionStatus.claimBlock = sessionData.claim.txBlock;
       sessionStatus.claimHash = sessionData.claim.txHash;
       sessionStatus.claimMessage = sessionData.claim.txError;
+    }
+    if(sessionData.secondClaimData) {
+      sessionStatus.secondClaimData = sessionData.claim.secondClaimData;
     }
     if(details) {
       sessionStatus.details = {

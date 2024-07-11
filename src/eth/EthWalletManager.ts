@@ -454,7 +454,7 @@ export class EthWalletManager {
         txPromise = undefined;
         do {
           const tx = txs[index];
-          await sleepPromise(3000);
+
           claimInfo.claim.txHex = await tx;
           claimInfo.claim.txNonce += index;
 
@@ -462,7 +462,12 @@ export class EthWalletManager {
             claimInfo.claim.txHex,
             claimInfo.claim.txNonce
           );
-          claimInfo.claim.txHash = txResult[0];
+          if (index === 0) {
+            claimInfo.claim.txHash = txResult[0];
+          } else {
+            claimInfo.claim.secondClaimData = {};
+            claimInfo.claim.secondClaimData.txHash = txResult[0]
+          }
           txHashes.push(txResult[0]);
           txPromises.push(txResult[1]);
           txPromise = txResult[1];
