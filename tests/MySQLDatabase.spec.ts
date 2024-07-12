@@ -148,6 +148,7 @@ describe("Session Management with MySQL DB Driver", () => {
       tasks: [],
       data: {"test.info": "test1"},
       claim: null,
+      secondClaimData: null
     });
     let sessionManager = ServiceManager.GetService(SessionManager);
     await sessionManager.initialize();
@@ -178,6 +179,7 @@ describe("Session Management with MySQL DB Driver", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
     let sessionManager = ServiceManager.GetService(SessionManager);
     await sessionManager.initialize();
@@ -310,6 +312,7 @@ describe("Session Management with MySQL DB Driver", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
     let sessionManager = ServiceManager.GetService(SessionManager);
     await sessionManager.initialize();
@@ -323,6 +326,7 @@ describe("Session Management with MySQL DB Driver", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
     await sessionManager.processSessionTimeouts();
     await sessionManager.saveAllSessions();

@@ -244,6 +244,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();
@@ -319,6 +320,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();
@@ -392,6 +394,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();
@@ -441,6 +444,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();
@@ -511,6 +515,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     ethClaimManager.processQueue();
@@ -578,6 +583,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();
@@ -635,6 +641,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();
@@ -711,6 +718,7 @@ describe("ETH Wallet Manager", () => {
       dropAmount: "1337",
       remoteIP: "8.8.8.8",
       tasks: [], data: {}, claim: null,
+      secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
     await ethClaimManager.processQueue();

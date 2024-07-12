@@ -123,6 +123,7 @@ describe("Faucet Session Management", () => {
       tasks: [],
       data: {"test.info": "test1"},
       claim: null,
+      secondClaimData: null
     });
     let sessionManager = ServiceManager.GetService(SessionManager);
     await sessionManager.initialize();
@@ -153,6 +154,7 @@ describe("Faucet Session Management", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
     let sessionManager = ServiceManager.GetService(SessionManager);
     await sessionManager.initialize();
@@ -285,6 +287,7 @@ describe("Faucet Session Management", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
     let sessionManager = ServiceManager.GetService(SessionManager);
     await sessionManager.initialize();
@@ -298,6 +301,7 @@ describe("Faucet Session Management", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
     await sessionManager.processSessionTimeouts();
     await sessionManager.saveAllSessions();

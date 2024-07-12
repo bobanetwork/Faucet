@@ -156,6 +156,7 @@ describe("Faucet module: zupass", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     });
 
     ServiceManager.GetService(FaucetDatabase).cleanStore();

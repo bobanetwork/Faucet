@@ -68,6 +68,7 @@ describe("Faucet Web API", () => {
       tasks: [],
       data: {},
       claim: null,
+      secondClaimData: null
     }, data);
     await ServiceManager.GetService(FaucetDatabase).updateSession(sessionData);
     return sessionData;
