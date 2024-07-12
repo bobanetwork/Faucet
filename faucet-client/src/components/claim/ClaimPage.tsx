@@ -254,6 +254,11 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
           <div className='col'>
             {toReadableAmount(BigInt(this.state.sessionStatus.balance), this.props.faucetConfig.faucetCoinDecimals, this.props.faucetConfig.faucetCoinSymbol)}
           </div>
+          {this.state.sessionStatus.erc20Balance && (
+          <div className='col'>
+            {toReadableAmount(BigInt(this.state.sessionStatus.erc20Balance), this.props.faucetConfig.faucetErc20CoinDecimals, this.props.faucetConfig.faucetErc20CoinSymbol)}
+          </div>
+          )}
         </div>
         <div className='row'>
           <div className='col-3'>

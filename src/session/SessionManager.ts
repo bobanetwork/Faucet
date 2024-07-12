@@ -56,8 +56,9 @@ export class SessionManager {
   }
 
   public async getSessionData(sessionId: string): Promise<FaucetSessionStoreData> {
-    if(this.faucetSessions[sessionId])
+    if(this.faucetSessions[sessionId]){
       return this.faucetSessions[sessionId].getStoreData()
+    }
     return await ServiceManager.GetService(FaucetDatabase).getSession(sessionId);
   }
 

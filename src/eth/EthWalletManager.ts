@@ -466,7 +466,7 @@ export class EthWalletManager {
             claimInfo.claim.txHash = txResult[0];
           } else {
             claimInfo.claim.secondClaimData = {};
-            claimInfo.claim.secondClaimData.txHash = txResult[0]
+            claimInfo.claim.secondClaimData.txHash = txResult[0];
           }
           txHashes.push(txResult[0]);
           txPromises.push(txResult[1]);

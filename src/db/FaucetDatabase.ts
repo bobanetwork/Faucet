@@ -200,8 +200,9 @@ export class FaucetDatabase {
       case 1: // upgrade to version 2
         schemaVersion = 2;
         await this.db.exec(SQL.driverSql({
-          [FaucetDbDriver.SQLITE]: `ALTER TABLE Sessions ADD COLUMN SecondClaimData TEXT NULL;`,
-          [FaucetDbDriver.MYSQL]: `ALTER TABLE Sessions ADD COLUMN SecondClaimData TEXT NULL;`,
+          [FaucetDbDriver.SQLITE]: `ALTER TABLE Sessions ADD COLUMN SecondClaimData TEXT NULL;
+          ALTER TABLE Sessions ADD COLUMN Erc20DropAmount TEXT NULL`,
+          [FaucetDbDriver.MYSQL]: `ALTER TABLE Sessions ADD COLUMN SecondClaimData TEXT NULL, ADD COLUMN Erc20DropAmount TEXT NULL;`,
         }));
     }
     if(schemaVersion !== oldVersion) {
@@ -275,7 +276,7 @@ export class FaucetDatabase {
   }
 
   public async selectSessionsSql(selectSql: string, args: any[], skipData?: boolean): Promise<FaucetSessionStoreData[]> {
-    let fields = ["SessionId","Status","StartTime","TargetAddr","DropAmount","RemoteIP","Tasks"];
+    let fields = ["SessionId","Status","StartTime","TargetAddr","DropAmount","RemoteIP","Tasks","Erc20DropAmount"];
     if(!skipData)
       fields.push("Data","ClaimData","SecondClaimData");
 
@@ -296,6 +297,7 @@ export class FaucetDatabase {
       Data: string;
       ClaimData: string;
       SecondClaimData: string;
+      Erc20DropAmount: string;
     }[];
 
     if(rows.length === 0)
@@ -308,11 +310,12 @@ export class FaucetDatabase {
         startTime: row.StartTime,
         targetAddr: row.TargetAddr,
         dropAmount: row.DropAmount,
+        erc20DropAmount: row.Erc20DropAmount,
         remoteIP: row.RemoteIP,
         tasks: JSON.parse(row.Tasks),
         data: skipData ? undefined : JSON.parse(row.Data),
         claim: skipData ? undefined : (row.ClaimData ? JSON.parse(row.ClaimData) : null),
-        secondClaimData: skipData ? undefined : (row.SecondClaimData ? JSON.parse(row.SecondClaimData) : null)
+        secondClaimData: skipData ? undefined : (row.SecondClaimData ? JSON.parse(row.SecondClaimData) : null),
       };
     });
   }
@@ -351,12 +354,13 @@ export class FaucetDatabase {
   }
 
   public async getSession(sessionId: string): Promise<FaucetSessionStoreData> {
-    let row = await this.db.get("SELECT SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData FROM Sessions WHERE SessionId = ?", [sessionId]) as {
+    let row = await this.db.get("SELECT SessionId,Status,StartTime,TargetAddr,DropAmount,Erc20DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData FROM Sessions WHERE SessionId = ?", [sessionId]) as {
       SessionId: string;
       Status: string;
       StartTime: number;
       TargetAddr: string;
       DropAmount: string;
+      Erc20DropAmount: string;
       RemoteIP: string;
       Tasks: string;
       Data: string;
@@ -373,6 +377,7 @@ export class FaucetDatabase {
       startTime: row.StartTime,
       targetAddr: row.TargetAddr,
       dropAmount: row.DropAmount,
+      erc20DropAmount: row.Erc20DropAmount ?? null,
       remoteIP: row.RemoteIP,
       tasks: JSON.parse(row.Tasks),
       data: JSON.parse(row.Data),
@@ -384,8 +389,8 @@ export class FaucetDatabase {
   public async updateSession(sessionData: FaucetSessionStoreData): Promise<void> {
     await this.db.run(
       SQL.driverSql({
-        [FaucetDbDriver.SQLITE]: "INSERT OR REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData) VALUES (?,?,?,?,?,?,?,?,?,?)",
-        [FaucetDbDriver.MYSQL]: "REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [FaucetDbDriver.SQLITE]: "INSERT OR REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,Erc20DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        [FaucetDbDriver.MYSQL]: "REPLACE INTO Sessions (SessionId,Status,StartTime,TargetAddr,DropAmount,Erc20DropAmount,RemoteIP,Tasks,Data,ClaimData,SecondClaimData) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
       }),
       [
         sessionData.sessionId,
@@ -393,6 +398,7 @@ export class FaucetDatabase {
         sessionData.startTime,
         sessionData.targetAddr,
         sessionData.dropAmount,
+        sessionData.erc20DropAmount ?? null,
         sessionData.remoteIP,
         JSON.stringify(sessionData.tasks),
         JSON.stringify(sessionData.data),
