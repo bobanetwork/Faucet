@@ -11,6 +11,9 @@ export interface IFaucetConfig {
   faucetCoinType: string;
   faucetCoinContract: string;
   faucetCoinDecimals: number;
+  faucetErc20DropAmountIfBoth: number;
+  faucetErc20CoinSymbol?: string;
+  faucetErc20CoinDecimals?: number;
   minClaim: number;
   maxClaim: number;
   sessionTimeout: number;

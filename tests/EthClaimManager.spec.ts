@@ -48,6 +48,7 @@ describe("ETH Claim Manager", () => {
       tasks: [],
       data: {},
       claim: claimData,
+      secondClaimData: null
     }
     await ServiceManager.GetService(FaucetDatabase).updateSession(sessionData);
     return sessionData;

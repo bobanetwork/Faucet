@@ -78,6 +78,10 @@ faucetCoinSymbol: "BobaSepETH"
 # erc20 = ERC20 token
 faucetCoinType: "native"
 
+# Symbol and decimals for the erc20 token if faucetCoinType is "both"
+# erc20CoinSymbol: ""
+# erc20CoinDecimals: 18
+
 # coin contract address (only for faucetCoinType = erc20)
 #faucetCoinContract: "0x94373a4919B3240D86eA41593D5eBa789FEF3848" # WETH9 on holesky
 
@@ -109,6 +113,9 @@ ethTxExplorerLink: "https://testnet.bobascan.com/tx/{txid}"
 # min/max drop amount (max is the default if no module lowers it)
 maxDropAmount: 1000000000000000 # 0.01 ETH
 minDropAmount: 1000000000000000 # 0.001 ETH
+
+# If faucetCoinType is "both", we use this value for erc20 amount. If not provided, defaults to minDropAmount/maxDropAmount.
+erc20DropAmountIfBoth: 1000000000000000000 # 1 
 
 # maximum session time (from start till payout)
 # only relevant if one of the enabled protection mechanisms introduces a session delay (eg. mining)

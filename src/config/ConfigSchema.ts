@@ -24,6 +24,8 @@ export interface IConfigSchema {
   faucetLogo?: string;
   faucetHomeHtml: string; // some additional html to show on the startpage
   faucetCoinSymbol: string; // symbol (short name) of the coin that can be mined
+  erc20CoinSymbol?: string // symbol for erc20 coin if coinType is "both"
+  erc20CoinDecimals?: number // decimals for erc20 coin if coinType is "both"
   faucetCoinType: FaucetCoinType; // coin type (native / erc20)
   faucetCoinContract: string; // erc20 coin contract (for erc20 coins)
   faucetLogFile: string; // logfile for faucet events / null for no log
@@ -53,6 +55,7 @@ export interface IConfigSchema {
 
   maxDropAmount: number;
   minDropAmount: number;
+  erc20DropAmountIfBoth?: number; // If faucetCoinType is "both", we use this amount for erc20 transaction
   sessionTimeout: number;
   sessionCleanup: number;
   sessionSaveTime: number;
