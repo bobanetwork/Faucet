@@ -306,7 +306,10 @@ export class EthClaimManager {
       claimTx.claim.claimStatus = ClaimTxStatus.PROCESSING;
 
       // send transaction
-      const transactions = await ethWalletManager.sendClaimTx(claimTx);
+      let transactions = await ethWalletManager.sendClaimTx(claimTx);
+      if (!Array.isArray(transactions)){
+        transactions = [transactions];
+      }
       for (const t of transactions) {
          this.pendingTxQueue[claimTx.claim.txHash] = claimTx;
         

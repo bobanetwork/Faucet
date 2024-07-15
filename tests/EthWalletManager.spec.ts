@@ -518,12 +518,12 @@ describe("ETH Wallet Manager", () => {
       secondClaimData: null
     };
     let claimTx = await ethClaimManager.createSessionClaim(testSessionData, {});
-    ethClaimManager.processQueue();
-    await awaitSleepPromise(4000, () => claimTx.claim.claimStatus !== ClaimTxStatus.PROCESSING);
-    expect(claimTx.claim.claimStatus).to.equal(ClaimTxStatus.PROCESSING, "unexpected claimTx status 1");
     rpcResponseError = false;
+    ethClaimManager.processQueue();
+    await awaitSleepPromise(4000, () => claimTx.claim.claimStatus === ClaimTxStatus.PROCESSING);
+    expect(claimTx.claim.claimStatus).to.equal(ClaimTxStatus.PROCESSING, `unexpected claimTx status 1 (${claimTx.claim.claimStatus})`);
     await awaitSleepPromise(4000, () => claimTx.claim.claimStatus === ClaimTxStatus.CONFIRMED);
-    expect(claimTx.claim.claimStatus).to.equal(ClaimTxStatus.CONFIRMED, "unexpected claimTx status 2");
+    expect(claimTx.claim.claimStatus).to.equal(ClaimTxStatus.CONFIRMED, `unexpected claimTx status 2 (${claimTx.claim.claimStatus})`);
   }).timeout(10000);
 
   it("send ClaimTx transaction (RPC/HTTP error on receipt poll)", async () => {
