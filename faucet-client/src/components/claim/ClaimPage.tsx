@@ -254,6 +254,11 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
           <div className='col'>
             {toReadableAmount(BigInt(this.state.sessionStatus.balance), this.props.faucetConfig.faucetCoinDecimals, this.props.faucetConfig.faucetCoinSymbol)}
           </div>
+          {this.state.sessionStatus.erc20Balance && (
+          <div className='col'>
+            {toReadableAmount(BigInt(this.state.sessionStatus.erc20Balance), this.props.faucetConfig.faucetErc20CoinDecimals, this.props.faucetConfig.faucetErc20CoinSymbol)}
+          </div>
+          )}
         </div>
         <div className='row'>
           <div className='col-3'>
@@ -388,6 +393,13 @@ export class ClaimPage extends React.PureComponent<IClaimPageProps, IClaimPageSt
               <a href={this.props.faucetConfig.ethTxExplorerLink.replace("{txid}", this.state.sessionStatus.claimHash)} target='_blank' rel='noopener noreferrer'>{this.state.sessionStatus.claimHash}</a> :
               <span>{this.state.sessionStatus.claimHash}</span>}
           </span>
+          {this.state.sessionStatus.secondClaimData && (
+            <span className='txhash'>
+              {this.props.faucetConfig.ethTxExplorerLink ? 
+                <a href={this.props.faucetConfig.ethTxExplorerLink.replace("{txid}", this.state.sessionStatus.secondClaimData.txHash)} target='_blank' rel='noopener noreferrer'>{this.state.sessionStatus.secondClaimData.txHash}</a> :
+                <span>{this.state.sessionStatus.secondClaimData.txHash}</span>}
+            </span>
+          )}
           {this.renderResultSharing()}
         </div>
       </div>

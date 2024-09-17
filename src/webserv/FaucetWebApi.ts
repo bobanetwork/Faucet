@@ -1,7 +1,7 @@
 import { IncomingMessage } from "http";
 import { faucetConfig } from "../config/FaucetConfig.js";
 import { ServiceManager } from "../common/ServiceManager.js";
-import { EthWalletManager } from "../eth/EthWalletManager.js";
+import { EthWalletManager, FaucetCoinType } from "../eth/EthWalletManager.js";
 import { FaucetStatus, IFaucetStatus } from "../services/FaucetStatus.js";
 import { FaucetHttpResponse } from "./FaucetHttpServer.js";
 import { SessionManager } from "../session/SessionManager.js";
@@ -30,6 +30,8 @@ export interface IClientFaucetConfig {
   faucetCoinType: string;
   faucetCoinContract: string;
   faucetCoinDecimals: number;
+  faucetErc20CoinSymbol: string;
+  faucetErc20CoinDecimals: number;
   minClaim: number;
   maxClaim: number;
   sessionTimeout: number;
@@ -47,11 +49,15 @@ export interface IClientSessionStatus {
   start: number;
   tasks: FaucetSessionTask[];
   balance: string;
+  erc20Balance?: string;
   target: string;
   claimIdx?: number;
   claimStatus?: string;
   claimBlock?: number;
   claimHash?: string;
+  secondClaimData?: {
+    txHash?: string;
+  }
   claimMessage?: string;
   failedCode?: string;
   failedReason?: string;
@@ -177,7 +183,9 @@ export class FaucetWebApi {
       faucetCoinSymbol: faucetConfig.faucetCoinSymbol,
       faucetCoinType: faucetConfig.faucetCoinType,
       faucetCoinContract: faucetConfig.faucetCoinContract,
+      faucetErc20CoinSymbol: faucetConfig.erc20CoinSymbol,
       faucetCoinDecimals: ethWalletManager.getFaucetDecimals(),
+      faucetErc20CoinDecimals: faucetConfig.erc20CoinDecimals,
       minClaim: faucetConfig.minDropAmount,
       maxClaim: faucetConfig.maxDropAmount,
       sessionTimeout: faucetConfig.sessionTimeout,
@@ -312,6 +320,12 @@ export class FaucetWebApi {
       sessionStatus.claimBlock = sessionData.claim.txBlock;
       sessionStatus.claimHash = sessionData.claim.txHash;
       sessionStatus.claimMessage = sessionData.claim.txError;
+    }
+    if (faucetConfig.faucetCoinType === FaucetCoinType.BOTH) {
+      sessionStatus.erc20Balance = sessionData.erc20DropAmount;
+    }
+    if(sessionData.secondClaimData) {
+      sessionStatus.secondClaimData = sessionData.claim.secondClaimData;
     }
     if(details) {
       sessionStatus.details = {

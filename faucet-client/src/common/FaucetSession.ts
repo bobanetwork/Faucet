@@ -10,11 +10,15 @@ export interface IFaucetSessionStatus {
     timeout: number;
   }[];
   balance: string;
+  erc20Balance?: string;
   target: string;
   claimIdx?: number;
   claimStatus?: string;
   claimBlock?: number;
   claimHash?: string;
+  secondClaimData?: {
+    txHash?: string;
+  }
   claimMessage?: string;
   failedCode?: string;
   failedReason?: string;
@@ -34,6 +38,7 @@ export interface IFaucetSessionInfo {
     timeout: number;
   }[];
   balance: string;
+  erc20BalanceIfBoth?: string;
   target: string;
   modules?: {[module: string]: any};
   failedCode?: string;

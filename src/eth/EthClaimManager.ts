@@ -55,6 +55,9 @@ export interface EthClaimData {
   txBlock?: number;
   txFee?: string;
   txError?: string;
+  secondClaimData?: {
+    txHash?: string;
+  }
 }
 
 export class EthClaimManager {
@@ -303,14 +306,19 @@ export class EthClaimManager {
       claimTx.claim.claimStatus = ClaimTxStatus.PROCESSING;
 
       // send transaction
-      let { txPromise } = await ethWalletManager.sendClaimTx(claimTx);
-      this.pendingTxQueue[claimTx.claim.txHash] = claimTx;
-      
-      ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.INFO, "Submitted claim transaction " + claimTx.session + " [" + ethWalletManager.readableAmount(BigInt(claimTx.amount)) + "] to: " + claimTx.target + ": " + claimTx.claim.txHash);
-      claimTx.claim.claimStatus = ClaimTxStatus.PENDING;
-      this.updateClaimStatus(claimTx);
+      let transactions = await ethWalletManager.sendClaimTx(claimTx);
+      if (!Array.isArray(transactions)){
+        transactions = [transactions];
+      }
+      for (const t of transactions) {
+         this.pendingTxQueue[claimTx.claim.txHash] = claimTx;
+        
+        ServiceManager.GetService(FaucetProcess).emitLog(FaucetLogLevel.INFO, "Submitted claim transaction " + claimTx.session + " [" + ethWalletManager.readableAmount(BigInt(claimTx.amount)) + "] to: " + claimTx.target + ": " + t.txHash);
+        claimTx.claim.claimStatus = ClaimTxStatus.PENDING;
+        this.updateClaimStatus(claimTx);
 
-      this.awaitTxReceipt(claimTx, txPromise);
+        this.awaitTxReceipt(claimTx, t.txPromise);
+      }
     } catch(ex) {
       claimTx.claim.claimStatus = ClaimTxStatus.FAILED;
       claimTx.claim.txError = "Processing Exception: " + ex.toString();
@@ -324,7 +332,6 @@ export class EthClaimManager {
     fee: bigint;
     receipt: TransactionReceipt;
   }>) {
-    // await transaction receipt
     txPromise.then((txData) => {
       claimTx.claim.txFee = txData.fee.toString();
       if(!txData.status) {
@@ -333,6 +340,7 @@ export class EthClaimManager {
 
       delete this.pendingTxQueue[claimTx.claim.txHash];
       delete this.claimTxDict[claimTx.session];
+      
       claimTx.claim.txBlock = txData.block;
 
       this.lastConfirmedClaimTxIdx = claimTx.claim.claimIdx;
