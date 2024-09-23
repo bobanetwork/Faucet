@@ -10,7 +10,7 @@ on:
         required: true
         description: Which faucet config to use?
         options:
-          - BOBAGOERLI_FAUCET_CONFIG
+          - BOBASEPOLIA_FAUCET_CONFIG
           - BOBABNBTESTNET_FAUCET_CONFIG
           - BOBABNB_FAUCET_CONFIG
           - BOBAETH_FAUCET_CONFIG
@@ -19,7 +19,7 @@ on:
         required: true
         description: Which network to tag the build for? (99% of the time this equals the faucetConfig)
         options:
-          - bobagoerli
+          - bobasepolia
           - bobabnbtestnet
           - bobabnb
           - bobaeth
